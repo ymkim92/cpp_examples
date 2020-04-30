@@ -8,13 +8,18 @@ int sum(int a, int b)
     return a+b;
 }
 
+int mul(int a, int b)
+{
+    return a*b;
+}
+
 int main()
 {
     std::cout << "main: startup" << std::endl;
     boost::thread workerThread(workerTask);
 
     std::cout << "main: waiting for thread" << std::endl;
-    RegisterFuncPtr(sum);
+    RegisterMulFuncPtr(mul);
     workerThread.join();
 
     std::cout << "main: done" << std::endl;

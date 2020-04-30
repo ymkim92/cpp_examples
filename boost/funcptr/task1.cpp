@@ -3,7 +3,8 @@
 
 #include "task1.h"
 
-functionPtr funcTest;
+functionPtr funcSum;
+functionPtr funcMul;
 
 void workerTask()
 {
@@ -11,13 +12,21 @@ void workerTask()
     std::cout << "Task: running" << std::endl;
 
     boost::this_thread::sleep(workTime);
-    if (funcTest != NULL)
+    if (funcSum != NULL)
         std::cout << "Sum of 2 and 3:" 
-            << funcTest(2, 3) << std::endl;
+            << funcSum(2, 3) << std::endl;
+    if (funcMul != NULL)
+        std::cout << "Mul of 2 and 3:" 
+            << funcMul(2, 3) << std::endl;
     std::cout << "Task: finished" << std::endl;
 }
 
-void RegisterFuncPtr(functionPtr func)
+void RegisterSumFuncPtr(functionPtr func)
 {
-    funcTest = func;
+    funcSum = func;
+}
+
+void RegisterMulFuncPtr(functionPtr func)
+{
+    funcMul = func;
 }
