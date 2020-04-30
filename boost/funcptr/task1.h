@@ -1,2 +1,4 @@
+typedef int (*functionPtr)(int, int);
+
 void workerTask();
-void RegisterFuncPtr(int (*func)(int, int));
+void RegisterFuncPtr(functionPtr func);
