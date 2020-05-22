@@ -26,9 +26,15 @@ public:
     ~Resource() {std::cout << "Resource destroyed\n";}
 };
 
+void passByValue(Auto_ptr1<Resource> res)
+{
+}
+
 int main()
 {
-    Auto_ptr1<Resource> res(new Resource());
+    Auto_ptr1<Resource> res1(new Resource());
+    passByValue(res1);
+    // Auto_ptr1<Resource> res2(res1);
 
     return 0;
 }
