@@ -5,7 +5,7 @@ int main()
     int x{5};
     int &lref{x};
     int &&rref{5};
-    int &&rref2{x};   // compilation error
+    // int &&rref2{x};   // compilation error
     int y{x};
 
     std::cout << lref << std::endl;
