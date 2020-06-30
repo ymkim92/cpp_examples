@@ -1,3 +1,5 @@
+// https://www.learncpp.com/cpp-tutorial/67-introduction-to-pointers/
+
 #include <iostream>
 #include <typeinfo>
  
