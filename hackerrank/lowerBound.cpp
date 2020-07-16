@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdio>
 #include <vector>
+#include <map>
 #include <iostream>
 #include <algorithm>
 using namespace std;
@@ -48,22 +49,26 @@ int main() {
         }
     }
 
+    map<int, int> m;
+    {
+        int i=0;
+        for (int value: v)
+        {
+            i += 1;
+            m.insert(pair<int, int>(value, i));    
+        }
+
+    }
+
     for (int i: qv)
     {
-        int index = 0;
-        for (int j: v)
+        if (m.find(i) != m.end())
         {
-            index += 1;
-            if (i == j)
-            {
-                cout << "Yes " << index << endl;
-                break;
-            }
-            if (i < j)
-            {
-                cout << "No " << index << endl;
-                break;
-            }
+                cout << "Yes " << m.at(i) << endl;
+        }
+        else
+        {
+                cout << "No " << m.lower_bound(i)->first-1 << endl;
         }
     }
     return 0;
