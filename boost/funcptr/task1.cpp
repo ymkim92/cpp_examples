@@ -19,6 +19,7 @@ void workerTask()
         std::cout << "Mul of 2 and 3:" 
             << funcMul(2, 3) << std::endl;
     std::cout << "Task: finished" << std::endl;
+    AddM
 }
 
 void RegisterSumFuncPtr(functionPtr func)

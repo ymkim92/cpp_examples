@@ -1,9 +1,5 @@
 #include <iostream>
-
-// namespace data 
-// {
-//     typedef Acceleration float;
-// }
+#include "test.h"
 
 int globalTestInt;
 void Func(int intFunc)

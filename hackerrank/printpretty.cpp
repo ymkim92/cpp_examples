@@ -11,9 +11,18 @@ int main() {
 		double B; cin >> B;
 		double C; cin >> C;
 
-        cout << hex << A;
+        cout.unsetf(ios::uppercase);
+        cout << setw(0) << "0x" << hex << static_cast<long int>(A);
         cout << endl;
-	}
-	return 0;
+        cout.fill('_');
+        cout.setf(ios::showpos);
+        cout << std::fixed;
+        cout << setprecision(2) << right << setw(15) << B << endl;
+        cout.unsetf(ios::showpos);
+        cout.setf(ios::uppercase);
+        cout << std::scientific;
+        cout << setprecision(9) << setw(15) << C << endl;
+    }
+    return 0;
 
 }
