@@ -2,7 +2,6 @@
 #include <assert.h>
 #include "ledcontrol.h"
 
-#include <semaphore.h>
 #include <time.h>
 #include <assert.h>
 #include <errno.h>
@@ -60,15 +59,12 @@ sem_t semLedRequest[] = {0};
 bool    bLedReady = false;
 
 
-void LedControllerTask();
 void LED_InitModes();
 void LED_InitPattern();
 static void LED_BlinkTest();
 static void LED_DisplayColorToAllLeds(uint8_t a_Color);
 static uint32_t ErrReg_GetErrors();
 static void WD_Pet();
-static bool Semaphore_pend(sem_t *sem, int timeoutMs);
-static void Semaphore_post(sem_t *sem);
 static uint32_t Clock_getTicks();
 static uint32_t GetIntervalFromFreq(uint8_t ui8LedFrequency);
 uint8_t LED_DisplayPattern(tLedControl *a_LedControl, uint8_t a_i, uint8_t a_PatternIndex);
@@ -76,7 +72,7 @@ static void GPIO_write(int color, int value);
 void LED_SetColor(uint8_t a_i, uint8_t a_LedColor);
 void Task_sleep_ms(int ms);
 
-void LedControllerTask()
+void *LedControllerTask(void *vargp)
 {
 	printf("Starting LedController task: \n");
 
@@ -367,7 +363,7 @@ static uint32_t ErrReg_GetErrors()
     return 0;
 }
 
-static bool Semaphore_pend(sem_t *sem, int timeoutMs)
+bool Semaphore_pend(sem_t *sem, int timeoutMs)
 {
     int ret;
     struct timespec ts;
@@ -387,9 +383,12 @@ static bool Semaphore_pend(sem_t *sem, int timeoutMs)
     return true;
 }
 
-static void Semaphore_post(sem_t *sem)
+void Semaphore_post(sem_t *sem)
 {
-
+    if (sem_post(sem) == -1) {
+        static const char err_msg[] = "sem_post() failed\n";
+        printf(err_msg);
+    }
 }
 
 static uint32_t Clock_getTicks()
@@ -428,4 +427,72 @@ static void GPIO_write(int color, int value)
 void Task_sleep_ms(int ms)
 {
 
+}
+
+bool LED_SetLedPattern(tLedId a_LedId, tLedPattern *a_pLedPattern)
+{
+    bool ret;
+    //Semaphore_pend(semLedRequest, BIOS_WAIT_FOREVER);
+    if (semLedRequest == NULL)
+    {
+        return false;
+    }
+
+    ret = Semaphore_pend(semLedRequest, MILLISECONDS_TO_TICKS(LED_TASK_PERIOD_MS)); // we can't block forever, because of wathcdog
+    if (ret == true) {
+// #if defined(SENSOR_TYPE_TSI4) || defined(SENSOR_TYPE_TSI4_R2)
+//         if(calibrationCRCError()) {
+//             ledControl[a_LedId].ledPattern = emergencyPatern;
+//         }
+//         else
+// #endif
+            ledControl[a_LedId].ledPattern = *a_pLedPattern;
+
+        ledControl[a_LedId].bValidPendingPattern = false;
+        ledControl[a_LedId].ledStateControl.ui8PatternIndex = LED_PATTERN_READY;
+        ledControl[a_LedId].ledStateControl.ui8DelayTicksIndex = 0;
+        ledControl[a_LedId].ledStateControl.bEndOfPatternCycle = false;
+        ledControl[a_LedId].ledStateControl.bEndOfRepetition = false;
+        newLedRequest[a_LedId] = true;
+    }
+    Semaphore_post(semLedRequest);
+
+    return ret;
+}
+
+bool LED_SetLedPendingPattern(tLedId a_LedId, tLedPattern *a_pLedPattern)
+{
+    bool ret;
+    //Semaphore_pend(semLedRequest, BIOS_WAIT_FOREVER);
+    if (semLedRequest == NULL)
+    {
+        return false;
+    }
+
+    ret = Semaphore_pend(semLedRequest, MILLISECONDS_TO_TICKS(LED_TASK_PERIOD_MS)); // we can't block forever, because of wathcdog
+    if (ret == true) {
+        ledControl[a_LedId].ledPendingPattern = *a_pLedPattern;
+        ledControl[a_LedId].bValidPendingPattern = true;
+        newLedPendingRequest[a_LedId] = true;
+    }
+    Semaphore_post(semLedRequest);
+    return ret;
+}
+
+bool LED_StopLedPattern(tLedId a_LedId)
+{
+    bool ret;
+    //Semaphore_pend(semLedRequest, BIOS_WAIT_FOREVER);
+    ret = Semaphore_pend(semLedRequest, MILLISECONDS_TO_TICKS(LED_TASK_PERIOD_MS)); // we can't block forever, because of wathcdog
+    if (ret == true) {
+        ledControl[a_LedId].ledPattern.colorPattern[0] = LED_COLOR_OFF;
+        ledControl[a_LedId].ledPattern.ui8PatternSize = 1;
+        ledControl[a_LedId].ledPattern.ui8DelayTicks = 0;
+        ledControl[a_LedId].ledPattern.ledFrequency = LED_FREQ_5Hz;
+        ledControl[a_LedId].ledStateControl.ui8PatternIndex = LED_PATTERN_READY;
+        ledControl[a_LedId].ledStateControl.ui8DelayTicksIndex = 0;
+        newLedRequest[a_LedId] = true;
+    }
+    Semaphore_post(semLedRequest);
+    return ret;
 }

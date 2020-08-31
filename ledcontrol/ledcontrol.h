@@ -5,6 +5,7 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <semaphore.h>
 
 #define SENSOR_TYPE_TSI4
 
@@ -62,7 +63,9 @@ typedef enum Task_WD_
     WD_SIZE
 } Task_WD_t;
 
-void LedControllerTask();
+void *LedControllerTask(void *vargp);
+bool Semaphore_pend(sem_t *sem, int timeoutMs);
+void Semaphore_post(sem_t *sem);
 
 /**
  * LED_SetLedPattern

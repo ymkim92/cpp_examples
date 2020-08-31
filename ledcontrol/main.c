@@ -7,11 +7,13 @@
 
 #include "ledcontrol.h"
   
-// A normal C function that is executed as a thread  
-// when its name is specified in pthread_create() 
+sem_t semTest;
+
 void *Thread1(void *vargp) 
 { 
     sleep(1); 
+    // tLedPattern ledPatternCanOpen;
+
     printf("Printing from Thread 1\n"); 
     return NULL; 
 } 
@@ -25,15 +27,16 @@ void *Thread2(void *vargp)
    
 int main() 
 { 
-    LedControllerTask();
-
     pthread_t thread_id; 
     pthread_t thread_id2; 
+    pthread_t thread_id3; 
     printf("Before Thread\n"); 
+    pthread_create(&thread_id3, NULL, LedControllerTask, NULL); 
     pthread_create(&thread_id, NULL, Thread1, NULL); 
     pthread_create(&thread_id2, NULL, Thread2, NULL); 
     pthread_join(thread_id, NULL); 
     pthread_join(thread_id2, NULL); 
-    printf("After Thread\n"); 
+    pthread_join(thread_id3, NULL); 
+    printf("Never Ends\n"); 
     exit(0); 
 }
