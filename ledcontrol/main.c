@@ -7,35 +7,48 @@
 
 #include "ledcontrol.h"
   
-sem_t semTest;
+// sem_t semTest;
 
 void *Thread1(void *vargp) 
 { 
-    sleep(1); 
+    bool ret;
+    // ret = Semaphore_pend(&semTest, 1500); // we can't block forever, because of wathcdog
+    if (ret == true) 
+    {
+    // sleep(1); 
+
     // tLedPattern ledPatternCanOpen;
 
-    printf("Printing from Thread 1\n"); 
+        printf("Printing from Thread 1\n"); 
+    }
+
     return NULL; 
 } 
 
 void *Thread2(void *vargp) 
 { 
-    sleep(2); 
+    sleep(1); 
+    // Semaphore_post(&semTest);
     printf("Printing from Thread 2\n"); 
     return NULL; 
 } 
    
 int main() 
 { 
+    InitSemaphore();
     pthread_t thread_id; 
     pthread_t thread_id2; 
     pthread_t thread_id3; 
+    // if (sem_init(&semTest, 0, 0) == -1) {
+    //     perror("sem_init");
+    //     exit(EXIT_FAILURE);
+    // }
     printf("Before Thread\n"); 
     pthread_create(&thread_id3, NULL, LedControllerTask, NULL); 
-    pthread_create(&thread_id, NULL, Thread1, NULL); 
-    pthread_create(&thread_id2, NULL, Thread2, NULL); 
-    pthread_join(thread_id, NULL); 
-    pthread_join(thread_id2, NULL); 
+    // pthread_create(&thread_id, NULL, Thread1, NULL); 
+    // pthread_create(&thread_id2, NULL, Thread2, NULL); 
+    // pthread_join(thread_id, NULL); 
+    // pthread_join(thread_id2, NULL); 
     pthread_join(thread_id3, NULL); 
     printf("Never Ends\n"); 
     exit(0); 

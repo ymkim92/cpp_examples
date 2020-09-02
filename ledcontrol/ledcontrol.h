@@ -66,6 +66,7 @@ typedef enum Task_WD_
 void *LedControllerTask(void *vargp);
 bool Semaphore_pend(sem_t *sem, int timeoutMs);
 void Semaphore_post(sem_t *sem);
+void InitSemaphore();
 
 /**
  * LED_SetLedPattern

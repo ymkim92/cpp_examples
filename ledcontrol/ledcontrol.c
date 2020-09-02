@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h> 
+#include <unistd.h>
 #include <assert.h>
 #include "ledcontrol.h"
 
@@ -56,7 +58,7 @@ tLedControl ledControl[LED_ID_COUNT];
 tLedControl protectedLedControl[LED_ID_COUNT];
 static uint32_t pui32Interval[6];
 sem_t semLedRequest[] = {0};
-bool    bLedReady = false;
+bool    bLedReady = false;      // Can be removed
 
 
 void LED_InitModes();
@@ -68,9 +70,17 @@ static void WD_Pet();
 static uint32_t Clock_getTicks();
 static uint32_t GetIntervalFromFreq(uint8_t ui8LedFrequency);
 uint8_t LED_DisplayPattern(tLedControl *a_LedControl, uint8_t a_i, uint8_t a_PatternIndex);
-static void GPIO_write(int color, int value);
+static void GPIO_write(int led, int color, int value);
 void LED_SetColor(uint8_t a_i, uint8_t a_LedColor);
 void Task_sleep_ms(int ms);
+
+void InitSemaphore()
+{
+    if (sem_init(semLedRequest, 0, 0) == -1) {
+        perror("sem_init");
+        exit(EXIT_FAILURE);
+    }
+}
 
 void *LedControllerTask(void *vargp)
 {
@@ -281,23 +291,23 @@ void LED_SetColor(uint8_t a_i, uint8_t a_LedColor)
 
     if (a_LedColor == LED_COLOR_RED)
     {
-    	GPIO_write(LED_R, 1);
-    	GPIO_write(LED_G, 0);
+    	GPIO_write(a_i, LED_R, 1);
+    	GPIO_write(a_i, LED_G, 0);
     }
     else if (a_LedColor == LED_COLOR_GREEN)
     {
-    	GPIO_write(LED_R, 0);
-    	GPIO_write(LED_G, 1);
+    	GPIO_write(a_i, LED_R, 0);
+    	GPIO_write(a_i, LED_G, 1);
     }
     else if (a_LedColor == LED_COLOR_YELLOW)
     {
-    	GPIO_write(LED_R, 1);
-    	GPIO_write(LED_G, 1);
+    	GPIO_write(a_i, LED_R, 1);
+    	GPIO_write(a_i, LED_G, 1);
     }
     else if (a_LedColor == LED_COLOR_OFF)
     {
-    	GPIO_write(LED_R, 0);
-    	GPIO_write(LED_G, 0);
+    	GPIO_write(a_i, LED_R, 0);
+    	GPIO_write(a_i, LED_G, 0);
     }
 }
 
@@ -370,16 +380,27 @@ bool Semaphore_pend(sem_t *sem, int timeoutMs)
 
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
     {
-        printf("RT clock error!!\n");
+        perror("RT clock error!!\n");
     }
 
-    ts.tv_nsec += 20000000;
+    ts.tv_nsec += timeoutMs * 1000 * 1000;
     ts.tv_sec += ts.tv_nsec / 1000000000;
     ts.tv_nsec %= 1000000000;
 
     while ((ret = sem_timedwait(sem, &ts)) == -1 && errno == EINTR)
         continue;
-        
+
+    if (ret == -1) {
+        if (errno == ETIMEDOUT)
+        {
+            printf("sem_timedwait() timed out\n");
+            return false;
+        }
+        else
+            perror("sem_timedwait");
+    } 
+
+    // printf("sem_timedwait() succeeded\n");
     return true;
 }
 
@@ -419,14 +440,15 @@ uint8_t LED_DisplayPattern(tLedControl *a_LedControl, uint8_t a_i, uint8_t a_Pat
     return a_PatternIndex;
 }
 
-static void GPIO_write(int color, int value)
+static void GPIO_write(int led, int color, int value)
 {
-
+    printf("%d,%d,%d\n", led, color, value);
 }
 
 void Task_sleep_ms(int ms)
 {
-
+    printf("sleep %d ms\n", ms);
+    usleep(ms * 1000);
 }
 
 bool LED_SetLedPattern(tLedId a_LedId, tLedPattern *a_pLedPattern)
