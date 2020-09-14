@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(LedControl)
 
+# GTK: https://gist.github.com/fracek/3323924
 # Use the package PkgConfig to detect GTK+ headers/library files
 FIND_PACKAGE(PkgConfig REQUIRED)
 PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)

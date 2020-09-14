@@ -6,7 +6,8 @@
 #include <pthread.h> 
 
 #include "ledcontrol.h"
-  
+#include "ledgui.h"
+
 // sem_t semTest;
 
 void *Thread1(void *vargp) 
@@ -45,7 +46,7 @@ int main()
     // }
     printf("Before Thread\n"); 
     pthread_create(&thread_id3, NULL, LedControllerTask, NULL); 
-    // pthread_create(&thread_id, NULL, Thread1, NULL); 
+    pthread_create(&thread_id, NULL, LedThread, NULL); 
     // pthread_create(&thread_id2, NULL, Thread2, NULL); 
     // pthread_join(thread_id, NULL); 
     // pthread_join(thread_id2, NULL); 

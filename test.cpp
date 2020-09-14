@@ -1,28 +1,8 @@
+#include <stdio.h>
 #include <iostream>
-#include "test.h"
 
-int globalTestInt;
-void Func(int intFunc)
+int main(int argc, char **argv)
 {
-    intFunc = 0;
-}
-
-void Func2(data::Acceleration &intFunc)
-{
-    intFunc = 0;
-}
-
-void Func3(uint32_t intFunc)
-{
-    intFunc = 0;
-}
-
-int main()
-{
-    int testInteger;
-
-    testInteger = 0;
-    globalTestInt = 1;
-    testI
-    Fu
+    printf("%d\n", argc);
+    return 0;
 }
