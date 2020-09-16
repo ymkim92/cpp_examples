@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include "ledcontrol.h"
+#include "ledgui.h"
 
 #include <time.h>
 #include <assert.h>
@@ -70,9 +71,7 @@ static void WD_Pet();
 static uint32_t Clock_getTicks();
 static uint32_t GetIntervalFromFreq(uint8_t ui8LedFrequency);
 uint8_t LED_DisplayPattern(tLedControl *a_LedControl, uint8_t a_i, uint8_t a_PatternIndex);
-static void GPIO_write(int led, int color, int value);
 void LED_SetColor(uint8_t a_i, uint8_t a_LedColor);
-void Task_sleep_ms(int ms);
 
 void InitSemaphore()
 {
@@ -84,10 +83,19 @@ void InitSemaphore()
 
 void *LedControllerTask(void *vargp)
 {
+    LED_WaitReady();
 	printf("Starting LedController task: \n");
 
+    while (1)
+    {
+        // LED_SetColor(LED_ID_0, LED_COLOR_RED);
+        // Task_sleep_ms(5000);
+        // LED_SetColor(LED_ID_0, LED_COLOR_GREEN);
+        // Task_sleep_ms(5000);
+    }
     LED_InitModes();
     LED_InitPattern();
+
 
 #ifdef DEBUG_ENABLED
     testLedBlink = 1;  // we test LED on reboot
@@ -438,17 +446,6 @@ uint8_t LED_DisplayPattern(tLedControl *a_LedControl, uint8_t a_i, uint8_t a_Pat
     LED_SetColor(a_i, a_LedControl->ledPattern.colorPattern[a_PatternIndex]);
     a_PatternIndex++;
     return a_PatternIndex;
-}
-
-static void GPIO_write(int led, int color, int value)
-{
-    printf("%d,%d,%d\n", led, color, value);
-}
-
-void Task_sleep_ms(int ms)
-{
-    printf("sleep %d ms\n", ms);
-    usleep(ms * 1000);
 }
 
 bool LED_SetLedPattern(tLedId a_LedId, tLedPattern *a_pLedPattern)

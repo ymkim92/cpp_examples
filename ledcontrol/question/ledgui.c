@@ -1,6 +1,8 @@
+// gcc ledgui.c `pkg-config --cflags gtk+-3.0 pkg-config --libs gtk+-3.0`
+
 #include <stdint.h>
 #include <stdbool.h>
-#include "ledgui.h"
+#include <gtk/gtk.h>
 
 
 #define LED_COLOR_RED       0
@@ -12,11 +14,27 @@
 static GtkTextBuffer *buffer;
 GtkTextTag *tagLed[LED_COLOR_COUNT];
 uint8_t ledColorData[] = {0,0};
-bool ledReady = false;
 
+static void activate (GtkApplication* app, gpointer user_data);
 static void SetGuiLedColor(int id, GtkTextTag *tag);
 static void SetLedColorTags();
-static uint8_t GetColorIndex();
+void Task_sleep_ms(int ms);
+
+int main()
+{
+    GtkApplication *app;
+    int status;
+
+    app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
+    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+    SetGuiLedColor(0, tagLed[LED_COLOR_RED]);
+    // Task_sleep_ms(500);
+    // SetGuiLedColor(0, tagLed[LED_COLOR_GREEN]);
+    // Task_sleep_ms(500);
+    status = g_application_run(G_APPLICATION(app), 0, NULL);
+
+    g_object_unref(app);
+}
 
 static void activate (GtkApplication* app, gpointer user_data)
 {
@@ -58,6 +76,7 @@ static void activate (GtkApplication* app, gpointer user_data)
 
     SetLedColorTags();
     // g_print ("Hello World\n");
+    SetGuiLedColor(0, tagLed[LED_COLOR_YELLOW]);
     gtk_widget_show_all(window);
 }
 
@@ -89,56 +108,6 @@ static void SetGuiLedColor(int id, GtkTextTag *tag)
     gtk_text_buffer_get_iter_at_offset (buffer, &start, idStart);
     gtk_text_buffer_get_iter_at_offset (buffer, &end, idEnd);
     gtk_text_buffer_apply_tag (buffer, tag, &start, &end);
-}
-
-void *LedThread (void *vargp)
-{
-    GtkApplication *app;
-    int status;
-
-    app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    status = g_application_run(G_APPLICATION(app), 0, NULL);
-    SetGuiLedColor(0, tagLed[0]);
-    Task_sleep_ms(500);
-    SetGuiLedColor(0, tagLed[1]);
-    Task_sleep_ms(500);
-    
-    ledReady = true;
-    // SetGuiLedColor(0, tagLed[2]);
-    // Task_sleep_ms(500);
-    g_object_unref(app);
-}
-
-void GPIO_write(int led, int color, int value)
-{
-    int colorIndex;
-    ledColorData[color] = value;
-    printf("%d,%d,%d\n", led, color, value);
-
-    colorIndex = GetColorIndex();
-    SetGuiLedColor(led, tagLed[colorIndex]);
-}
-
-static uint8_t GetColorIndex()
-{
-    if ( (ledColorData[0] == 0) && (ledColorData[1] == 0) ) 
-        return 3;
-    if ( (ledColorData[0] == 0) && (ledColorData[1] == 1) ) 
-        return 1;
-    if ( (ledColorData[0] == 1) && (ledColorData[1] == 0) ) 
-        return 0;
-    if ( (ledColorData[0] == 1) && (ledColorData[1] == 1) ) 
-        return 2;
-}
-
-void LED_WaitReady()
-{
-    while (ledReady == false)
-    {
-        // printf("##########################\n");
-        Task_sleep_ms(2000);
-    }
 }
 
 void Task_sleep_ms(int ms)

@@ -1,0 +1,1 @@
+g++ diagdiff.cpp -std=c++14
