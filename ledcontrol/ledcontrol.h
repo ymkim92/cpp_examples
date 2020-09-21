@@ -18,6 +18,16 @@ extern "C"
 #define LED_FREQ_1_25Hz     4       // 800ms
 #define LED_FREQ_0_625Hz    5       // 1.6s
 
+#define LED_COLOR_RED       0
+#define LED_COLOR_GREEN     1
+#define LED_COLOR_YELLOW    2
+#define LED_COLOR_MIX1      LED_COLOR_YELLOW
+#define LED_COLOR_OFF       3
+#define LED_COLOR_COUNT     4
+
+#define LED_PATTERN_READY               0xff
+#define LED_INFINITE_REPETITION         0xff
+
 typedef struct LedPattern
 {
     uint8_t colorPattern[LED_PATTERN_MAX];
@@ -117,6 +127,8 @@ bool LED_SetLedPendingPattern(tLedId a_LedId, tLedPattern *a_pLedPattern);
  *
  */
 uint8_t LED_SetTestLed();
+
+sem_t semLedRequest[1];
 
 #ifdef __cplusplus
 } // extern "C"

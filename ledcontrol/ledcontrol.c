@@ -15,18 +15,8 @@
 #define MILLISECONDS_TO_TICKS(m)        (m)
 #define LED_TASK_PERIOD_MS              20
 
-#define LED_COLOR_RED       0
-#define LED_COLOR_GREEN     1
-#define LED_COLOR_YELLOW    2
-#define LED_COLOR_MIX1      LED_COLOR_YELLOW
-#define LED_COLOR_OFF       3
-#define LED_COLOR_COUNT     4
-
 #define LED_R       1
 #define LED_G       2
-
-#define LED_PATTERN_READY               0xff
-#define LED_INFINITE_REPETITION         0xff
 
 typedef struct LedStateControl
 {
@@ -58,7 +48,7 @@ uint8_t ui8LedSleepMode;
 tLedControl ledControl[LED_ID_COUNT];
 tLedControl protectedLedControl[LED_ID_COUNT];
 static uint32_t pui32Interval[6];
-sem_t semLedRequest[] = {0};
+sem_t semLedRequest[1] = {0};
 bool    bLedReady = false;      // Can be removed
 
 
@@ -86,13 +76,6 @@ void *LedControllerTask(void *vargp)
     LED_WaitReady();
 	printf("Starting LedController task: \n");
 
-    while (1)
-    {
-        // LED_SetColor(LED_ID_0, LED_COLOR_RED);
-        // Task_sleep_ms(5000);
-        // LED_SetColor(LED_ID_0, LED_COLOR_GREEN);
-        // Task_sleep_ms(5000);
-    }
     LED_InitModes();
     LED_InitPattern();
 

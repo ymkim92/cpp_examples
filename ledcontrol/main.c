@@ -10,21 +10,7 @@
 
 // sem_t semTest;
 
-void *Thread1(void *vargp) 
-{ 
-    bool ret;
-    // ret = Semaphore_pend(&semTest, 1500); // we can't block forever, because of wathcdog
-    if (ret == true) 
-    {
-    // sleep(1); 
-
-    // tLedPattern ledPatternCanOpen;
-
-        printf("Printing from Thread 1\n"); 
-    }
-
-    return NULL; 
-} 
+void *Task1 (void *vargp);
 
 void *Thread2(void *vargp) 
 { 
@@ -44,11 +30,36 @@ int main()
     //     perror("sem_init");
     //     exit(EXIT_FAILURE);
     // }
-    pthread_create(&thread_id3, NULL, LedControllerTask, NULL); 
+    pthread_create(&thread_id2, NULL, LedControllerTask, NULL); 
     pthread_create(&thread_id, NULL, LedThread, NULL); 
-    // pthread_create(&thread_id2, NULL, Thread2, NULL); 
-    // pthread_join(thread_id, NULL); 
-    // pthread_join(thread_id2, NULL); 
-    pthread_join(thread_id3, NULL); 
+    pthread_create(&thread_id3, NULL, Task1, NULL); 
+    pthread_join(thread_id, NULL); 
+    pthread_join(thread_id2, NULL); 
+    // pthread_join(thread_id3, NULL); 
     exit(0); 
+}
+
+void *Task1 (void *vargp)
+{
+    // tLedPattern ledPatternCanOpen;
+    printf("Printing from Task 1\n");
+    while (semLedRequest == NULL) 
+    {
+        Task_sleep_ms(1);
+    }
+    // Turn on Power LED
+    {
+        tLedPattern ledPattern1;
+
+        ledPattern1.colorPattern[0] = LED_COLOR_RED;
+        ledPattern1.ui8PatternSize = 1;
+        ledPattern1.ui8DelayTicks = 0;
+        ledPattern1.ledFrequency = LED_FREQ_5Hz;
+        ledPattern1.ui8Count = LED_INFINITE_REPETITION;
+
+        Semaphore_post(semLedRequest);      // make sure its open
+        LED_SetLedPattern(LED_ID_0, &ledPattern1);
+
+    }
+    return NULL; 
 }
