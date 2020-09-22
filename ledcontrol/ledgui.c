@@ -13,10 +13,13 @@ char *ledColor[] = {"red", "green", "yellow", "black"};
 uint8_t ledColorData[] = {0,0};
 bool ledReady = false;
 GtkWidget *ledLight;
+GMutex mutex;
+gchar ledText[256];
 
-static void SetGuiLedColor(GtkLabel *led, char* fcolor);
+static gboolean SetGuiLedColor(gpointer data);
 static uint8_t GetColorIndex();
 void SetFontColors(GtkWidget *grid);
+static void SetTextColor(char* fcolor);
 
 void *LedThread (void *vargp)
 {
@@ -62,7 +65,8 @@ void GPIO_write(int led, int color, int value)
     printf("led %d, color %d, value %d\n", led, color, value);
     colorIndex = GetColorIndex();
     printf("color=%d\n", colorIndex);
-    SetGuiLedColor(GTK_LABEL(ledLight), ledColor[colorIndex]);
+    SetTextColor(ledColor[colorIndex]);
+    g_idle_add(SetGuiLedColor, ledLight);
 }
 
 static uint8_t GetColorIndex()
@@ -115,10 +119,19 @@ void SetFontColors(GtkWidget *grid)
 
 }
 
-static void SetGuiLedColor(GtkLabel *led, char* fcolor)
+static gboolean SetGuiLedColor(gpointer data)
 {
     char text[256];
-    // https://unix.stackexchange.com/questions/457584/gtk3-change-text-color-in-a-label-raspberry-pi
-    snprintf(text, 256, "<span background=\"black\" foreground=\"%s\">O</span>", fcolor);
+    GtkLabel *led = data;
+    g_mutex_lock (&mutex);
+    strncpy(text, ledText, sizeof(text));
+    g_mutex_unlock (&mutex);
     gtk_label_set_markup (led, text);
+}
+
+static void SetTextColor(char* fcolor)
+{
+    g_mutex_lock(&mutex);
+    snprintf(ledText, 256, "<span background=\"black\" foreground=\"%s\">O</span>", fcolor);
+    g_mutex_unlock(&mutex);
 }

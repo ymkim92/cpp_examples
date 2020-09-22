@@ -69,7 +69,7 @@ void LedBlinkGreen()
 
     ledPattern1.ui8PatternSize = 5;
     ledPattern1.ui8DelayTicks = 5;
-    ledPattern1.ledFrequency = LED_FREQ_5Hz;
+    ledPattern1.ledFrequency = LED_FREQ_20Hz;
     ledPattern1.ui8Count = LED_INFINITE_REPETITION;
     LED_SetLedPattern(LED_ID_0, &ledPattern1);
     printf("Blink Green!\n");
