@@ -11,6 +11,8 @@
 // sem_t semTest;
 
 void *Task1 (void *vargp);
+void TurnOnLed();
+void LedBlinkGreen();
 
 void *Thread2(void *vargp) 
 { 
@@ -42,24 +44,49 @@ int main()
 void *Task1 (void *vargp)
 {
     // tLedPattern ledPatternCanOpen;
+    Task_sleep_ms(7000);
     printf("Printing from Task 1\n");
     while (semLedRequest == NULL) 
     {
         Task_sleep_ms(1);
     }
-    // Turn on Power LED
-    {
-        tLedPattern ledPattern1;
+    
+    LedBlinkGreen();
+    // TurnOnLed();
 
-        ledPattern1.colorPattern[0] = LED_COLOR_RED;
-        ledPattern1.ui8PatternSize = 1;
-        ledPattern1.ui8DelayTicks = 0;
-        ledPattern1.ledFrequency = LED_FREQ_5Hz;
-        ledPattern1.ui8Count = LED_INFINITE_REPETITION;
-
-        Semaphore_post(semLedRequest);      // make sure its open
-        LED_SetLedPattern(LED_ID_0, &ledPattern1);
-
-    }
     return NULL; 
+}
+
+void LedBlinkGreen()
+{
+    tLedPattern ledPattern1;
+
+    ledPattern1.colorPattern[0] = LED_COLOR_GREEN;
+    ledPattern1.colorPattern[1] = LED_COLOR_GREEN;
+    ledPattern1.colorPattern[2] = LED_COLOR_GREEN;
+    ledPattern1.colorPattern[3] = LED_COLOR_GREEN;
+    ledPattern1.colorPattern[4] = LED_COLOR_GREEN;
+
+    ledPattern1.ui8PatternSize = 5;
+    ledPattern1.ui8DelayTicks = 5;
+    ledPattern1.ledFrequency = LED_FREQ_5Hz;
+    ledPattern1.ui8Count = LED_INFINITE_REPETITION;
+    LED_SetLedPattern(LED_ID_0, &ledPattern1);
+    printf("Blink Green!\n");
+}
+
+void TurnOnLed()
+{
+    // Turn on Power LED
+    tLedPattern ledPattern1;
+
+    ledPattern1.colorPattern[0] = LED_COLOR_RED;
+    ledPattern1.ui8PatternSize = 1;
+    ledPattern1.ui8DelayTicks = 0;
+    ledPattern1.ledFrequency = LED_FREQ_5Hz;
+    ledPattern1.ui8Count = LED_INFINITE_REPETITION;
+
+    // Semaphore_post(semLedRequest);      // make sure its open
+    LED_SetLedPattern(LED_ID_0, &ledPattern1);
+
 }

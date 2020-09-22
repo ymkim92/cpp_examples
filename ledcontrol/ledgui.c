@@ -88,7 +88,7 @@ void LED_WaitReady()
 
 void Task_sleep_ms(int ms)
 {
-    printf("sleep %d ms\n", ms);
+    // printf("sleep %d ms\n", ms);
     usleep(ms * 1000);
 }
 

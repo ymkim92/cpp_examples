@@ -12,22 +12,36 @@
 
 char *color[] = {"red", "green", "yellow", "black"};
 GtkWidget *ledLight;
+GMutex mutex;
+gchar ledText[256];
 
 void *LedControllerTask (void *vargp);
 void *LedGuiThread (void *vargp);
 void SetFontColors(GtkWidget *grid);
-void updateLabel(GtkLabel *led, char* fcolor);
+gboolean updateLabel(gpointer data);
 void Task_sleep_ms(int ms);
+void SetTextColor(char* fcolor);
 
 int main() 
 { 
     pthread_t thread_id; 
     pthread_t thread_id2; 
 
-    // InitSemaphore();
-
     pthread_create(&thread_id2, NULL, LedControllerTask, NULL); 
-    pthread_create(&thread_id, NULL, LedGuiThread, NULL); 
+    pthread_create(&thread_id, NULL, LedGuiThread, NULL);
+
+    {
+        Task_sleep_ms(1000);
+        while (1)
+        {
+            Task_sleep_ms(100);
+            SetTextColor(color[LED_COLOR_GREEN]);
+            g_idle_add(updateLabel, ledLight);
+            Task_sleep_ms(100);
+            SetTextColor(color[LED_COLOR_OFF]);
+            g_idle_add(updateLabel, ledLight);
+        }
+    }
     pthread_join(thread_id2, NULL); 
     pthread_join(thread_id, NULL); 
     exit(0); 
@@ -36,12 +50,16 @@ int main()
 void *LedControllerTask (void *vargp)
 {
     Task_sleep_ms(1000);
-    updateLabel(GTK_LABEL(ledLight), color[LED_COLOR_RED]);
-    Task_sleep_ms(1000);
-    updateLabel(GTK_LABEL(ledLight), color[LED_COLOR_GREEN]);
-    Task_sleep_ms(1000);
-    updateLabel(GTK_LABEL(ledLight), color[LED_COLOR_YELLOW]);
-
+    while (1)
+    {
+        Task_sleep_ms(100);
+        SetTextColor(color[LED_COLOR_RED]);
+        g_idle_add(updateLabel, ledLight);
+        Task_sleep_ms(100);
+        SetTextColor(color[LED_COLOR_OFF]);
+        // g_idle_add(updateLabel, GTK_LABEL(ledLight));
+        g_idle_add(updateLabel, ledLight);
+    }
 }
 
 void *LedGuiThread (void *vargp)
@@ -102,16 +120,25 @@ void SetFontColors(GtkWidget *grid)
 
 }
 
-void updateLabel(GtkLabel *led, char* fcolor)
+gboolean updateLabel(gpointer data)
 {
     char text[256];
-    // https://unix.stackexchange.com/questions/457584/gtk3-change-text-color-in-a-label-raspberry-pi
-    snprintf(text, 256, "<span background=\"black\" foreground=\"%s\">O</span>", fcolor);
+    GtkLabel *led = data;
+    g_mutex_lock (&mutex);
+    strncpy(text, ledText, sizeof(text));
+    g_mutex_unlock (&mutex);
     gtk_label_set_markup (GTK_LABEL (led), text);
 }
 
 void Task_sleep_ms(int ms)
 {
-    printf("sleep %d ms\n", ms);
+    // printf("sleep %d ms\n", ms);
     usleep(ms * 1000);
+}
+
+void SetTextColor(char* fcolor)
+{
+    g_mutex_lock(&mutex);
+    snprintf(ledText, 256, "<span background=\"black\" foreground=\"%s\">O</span>", fcolor);
+    g_mutex_unlock(&mutex);
 }

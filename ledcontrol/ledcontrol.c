@@ -405,7 +405,14 @@ void Semaphore_post(sem_t *sem)
 
 static uint32_t Clock_getTicks()
 {
-    return 0;
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+    {
+        perror("RT clock error!!\n");
+    }
+
+    return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1e6);
 }
 
 static uint32_t GetIntervalFromFreq(uint8_t ui8LedFrequency)
