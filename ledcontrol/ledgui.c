@@ -126,6 +126,8 @@ static gboolean SetGuiLedColor(gpointer data)
     strncpy(text, ledText, sizeof(text));
     g_mutex_unlock (&mutex);
     gtk_label_set_markup (led, text);
+
+    return FALSE;
 }
 
 static void SetTextColor(char* fcolor)

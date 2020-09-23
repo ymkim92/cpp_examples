@@ -129,6 +129,11 @@ gboolean updateLabel(gpointer data)
     strncpy(text, ledText, sizeof(text));
     g_mutex_unlock (&mutex);
     gtk_label_set_markup (GTK_LABEL (led), text);
+
+    //  If the function returns FALSE 
+    // it is automatically removed from the list 
+    // of event sources and will not be called again.
+    return FALSE; 
 }
 
 void Task_sleep_ms(int ms)
