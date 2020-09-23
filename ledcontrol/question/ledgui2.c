@@ -1,4 +1,4 @@
-// https://stackoverflow.com/questions/26429173/getting-a-gtk-label-to-dislay-an-int-in-c
+// gcc ledgui.c `pkg-config --cflags gtk+-3.0 pkg-config --libs gtk+-3.0`
 
 #include <gtk/gtk.h>
 #include <string.h>
@@ -15,8 +15,9 @@ GtkWidget *ledLight;
 GMutex mutex;
 gchar ledText[256];
 
-void *LedControllerTask (void *vargp);
-void *LedGuiThread (void *vargp);
+void *LedTask1 (void *vargp);
+void *LedTask2 (void *vargp);
+void LedGuiThread ();
 void SetFontColors(GtkWidget *grid);
 gboolean updateLabel(gpointer data);
 void Task_sleep_ms(int ms);
@@ -27,29 +28,18 @@ int main()
     pthread_t thread_id; 
     pthread_t thread_id2; 
 
-    pthread_create(&thread_id2, NULL, LedControllerTask, NULL); 
-    pthread_create(&thread_id, NULL, LedGuiThread, NULL);
+    LedGuiThread();
+    pthread_create(&thread_id2, NULL, LedTask1, NULL); 
+    pthread_create(&thread_id, NULL, LedTask2, NULL);
 
-    {
-        Task_sleep_ms(1000);
-        while (1)
-        {
-            Task_sleep_ms(100);
-            SetTextColor(color[LED_COLOR_GREEN]);
-            g_idle_add(updateLabel, ledLight);
-            Task_sleep_ms(100);
-            SetTextColor(color[LED_COLOR_OFF]);
-            g_idle_add(updateLabel, ledLight);
-        }
-    }
-    pthread_join(thread_id2, NULL); 
-    pthread_join(thread_id, NULL); 
+    gtk_main();
+    // pthread_join(thread_id2, NULL); 
+    // pthread_join(thread_id, NULL); 
     exit(0); 
 }
 
-void *LedControllerTask (void *vargp)
+void *LedTask1 (void *vargp)
 {
-    Task_sleep_ms(1000);
     while (1)
     {
         Task_sleep_ms(100);
@@ -57,12 +47,24 @@ void *LedControllerTask (void *vargp)
         g_idle_add(updateLabel, ledLight);
         Task_sleep_ms(100);
         SetTextColor(color[LED_COLOR_OFF]);
-        // g_idle_add(updateLabel, GTK_LABEL(ledLight));
         g_idle_add(updateLabel, ledLight);
     }
 }
 
-void *LedGuiThread (void *vargp)
+void *LedTask2 (void *vargp)
+{
+    while (1)
+    {
+        Task_sleep_ms(100);
+        SetTextColor(color[LED_COLOR_GREEN]);
+        g_idle_add(updateLabel, ledLight);
+        Task_sleep_ms(100);
+        SetTextColor(color[LED_COLOR_OFF]);
+        g_idle_add(updateLabel, ledLight);
+    }
+}
+
+void LedGuiThread()
 {
     GtkWidget *window;
     GtkWidget *grid;
@@ -94,7 +96,6 @@ void *LedGuiThread (void *vargp)
 
     gtk_widget_show_all (window);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    gtk_main();
 }
 
 void SetFontColors(GtkWidget *grid)

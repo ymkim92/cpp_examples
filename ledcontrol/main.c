@@ -25,18 +25,17 @@ void *Thread2(void *vargp)
 int main() 
 { 
     InitSemaphore();
-    pthread_t thread_id; 
     pthread_t thread_id2; 
     pthread_t thread_id3; 
     // if (sem_init(&semTest, 0, 0) == -1) {
     //     perror("sem_init");
     //     exit(EXIT_FAILURE);
     // }
+    LedThread();
     pthread_create(&thread_id2, NULL, LedControllerTask, NULL); 
-    pthread_create(&thread_id, NULL, LedThread, NULL); 
     pthread_create(&thread_id3, NULL, Task1, NULL); 
-    pthread_join(thread_id, NULL); 
-    pthread_join(thread_id2, NULL); 
+    
+    gtk_main();
     // pthread_join(thread_id3, NULL); 
     exit(0); 
 }
@@ -44,7 +43,7 @@ int main()
 void *Task1 (void *vargp)
 {
     // tLedPattern ledPatternCanOpen;
-    Task_sleep_ms(7000);
+    Task_sleep_ms(5000);
     printf("Printing from Task 1\n");
     while (semLedRequest == NULL) 
     {

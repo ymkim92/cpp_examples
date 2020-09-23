@@ -21,7 +21,7 @@ static uint8_t GetColorIndex();
 void SetFontColors(GtkWidget *grid);
 static void SetTextColor(char* fcolor);
 
-void *LedThread (void *vargp)
+void LedThread ()
 {
     GtkWidget *window;
     GtkWidget *grid;
@@ -54,7 +54,6 @@ void *LedThread (void *vargp)
     gtk_widget_show_all (window);
     ledReady = true;
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    gtk_main();
 }
 
 void GPIO_write(int led, int color, int value)
