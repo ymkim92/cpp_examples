@@ -21,7 +21,7 @@ static uint8_t GetColorIndex();
 void SetFontColors(GtkWidget *grid);
 static void SetTextColor(char* fcolor);
 
-void LedThread ()
+void LedInitGtk ()
 {
     GtkWidget *window;
     GtkWidget *grid;
@@ -61,9 +61,8 @@ void GPIO_write(int led, int color, int value)
     int colorIndex;
     ledColorData[color-1] = value;
 
-    printf("led %d, color %d, value %d\n", led, color, value);
     colorIndex = GetColorIndex();
-    printf("color=%d\n", colorIndex);
+    printf("led %d, color %d, value %d ==> current color %d\n", led, color, value, colorIndex);
     SetTextColor(ledColor[colorIndex]);
     g_idle_add(SetGuiLedColor, ledLight);
 }

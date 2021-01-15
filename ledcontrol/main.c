@@ -12,6 +12,7 @@
 
 void *Task1 (void *vargp);
 void TurnOnLed();
+void CheckLedBlinkGreen();
 void LedBlinkGreen();
 
 void *Thread2(void *vargp) 
@@ -31,8 +32,8 @@ int main()
     //     perror("sem_init");
     //     exit(EXIT_FAILURE);
     // }
-    LedThread();
-    pthread_create(&thread_id2, NULL, LedControllerTask, NULL); 
+    LedInitGtk();
+    pthread_create(&thread_id2, NULL, LedControllerTask, NULL);
     pthread_create(&thread_id3, NULL, Task1, NULL); 
     
     gtk_main();
@@ -53,7 +54,15 @@ void *Task1 (void *vargp)
     LedBlinkGreen();
     // TurnOnLed();
 
+    CheckLedBlinkGreen();
+
     return NULL; 
+}
+
+void CheckLedBlinkGreen()
+{
+    WaitNewPattern(LED_ID_0);
+
 }
 
 void LedBlinkGreen()
@@ -68,7 +77,7 @@ void LedBlinkGreen()
 
     ledPattern1.ui8PatternSize = 5;
     ledPattern1.ui8DelayTicks = 5;
-    ledPattern1.ledFrequency = LED_FREQ_20Hz;
+    ledPattern1.ledFrequency = LED_FREQ_10Hz;
     ledPattern1.ui8Count = LED_INFINITE_REPETITION;
     LED_SetLedPattern(LED_ID_0, &ledPattern1);
     printf("Blink Green!\n");
