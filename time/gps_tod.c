@@ -12,7 +12,7 @@ typedef struct
     uint32_t m_timeMs;    
 } bltime_t;
 /*
-    timestamp                                                                m_time
+    timestamp           A                                                    m_time   B   A+B
 BL: 20935000  ppsTimeMs 106732, m_ppsTimeMs 107732, m_prevPpsTimeMs 106732 1 20934800 800 107532 ms
 BL: 20935200  ppsTimeMs 107732, m_ppsTimeMs 107732, m_prevPpsTimeMs 106732 0 20935000 0 107732 ms
 BL: 20935400  ppsTimeMs 107732, m_ppsTimeMs 107732, m_prevPpsTimeMs 106732 0 20935200 200 107932 ms
