@@ -31,6 +31,17 @@ BL: 20937800  ppsTimeMs 109732, m_ppsTimeMs 109732, m_prevPpsTimeMs 108732 0 209
 BL: 20938000  ppsTimeMs 109732, m_ppsTimeMs 110732, m_prevPpsTimeMs 109732 1 20937800 800 110532 ms
 BL: 20938200  ppsTimeMs 110732, m_ppsTimeMs 110732, m_prevPpsTimeMs 109732 0 20938000 0 110732 ms
 
+    printf("%10lu, %10u, %d, %10lu, %10u\n", bl->m_timeStampMs, bl->m_timeMs, usePrevPpsTs, packet_timeStampUs, (uint32_t)(packet_timeStampUs/1000));
+
+timestamp     tod       p   systime of ts  ms
+  20935000,   20934800, 1,  107532000,     107532
+  20935200,   20935000, 0,  107732000,     107732
+
+  86399800,   86399600, 0,  108332000,     108332
+         0,   86399800, 1,  108532000,     108532
+  86399800,   86399600, 0, 79044378000,   79044378
+         0,   86399800, 1, 79045578000,   79045578
+
 */
 uint32_t Hwi_disable();
 void Hwi_restore(uint32_t hwikey);
@@ -47,7 +58,9 @@ int main()
 
     int32_t bline_time;
     uint32_t bline_timeStamp, packet_timeStampUs;
-
+#if 0
+// BL: 20935000  ppsTimeMs 106732, m_ppsTimeMs 107732, m_prevPpsTimeMs 106732 1 20934800 800 107532 ms
+// BL: 20935200  ppsTimeMs 107732, m_ppsTimeMs 107732, m_prevPpsTimeMs 106732 0 20935000 0 107732 ms
     //              m_ppsTimeUs m_prevPpsTimeUs m_timeStampMs m_timeMs   
     bl = (bltime_t){107732000,  106732000,      20935000,     20934800};
     PrintPacketTime(&bl);    
@@ -58,10 +71,37 @@ int main()
     printf("\n");
     bl = (bltime_t){107732000, 106732000, 86399600, 86399400};
     PrintPacketTime(&bl);    
-    bl = (bltime_t){107732000, 106732000, 86399800, 86399600};
+//                  A          B                    C       :                    
+    bl = (bltime_t){107732000, 106732000, 86399800, 86399600};  // A/1000 + C%1000 
     PrintPacketTime(&bl);    
-    bl = (bltime_t){108732000, 107732000, 0, 86399800};
+    bl = (bltime_t){108732000, 107732000, 0, 86399800}; // B/1000 + C%1000
     PrintPacketTime(&bl);    
+#endif
+            //   ppsTimeMs 79044778, m_ppsTimeMs 79044778, m_prevPpsTimeMs 79043778 0 86399000 0   79044778 ms
+// BL: 86399000  ppsTimeMs 79043778, m_ppsTimeMs 79044778, m_prevPpsTimeMs 79043778 1 86398800 800 79044578 ms
+// BL: 86399200  ppsTimeMs 79044778, m_ppsTimeMs 79044778, m_prevPpsTimeMs 79043778 0 86399000 0   79044778 ms
+// BL: 86399400  ppsTimeMs 79044778, m_ppsTimeMs 79044778, m_prevPpsTimeMs 79043778 0 86399200 200 79044978 ms
+// BL: 86399600  ppsTimeMs 79044778, m_ppsTimeMs 79044778, m_prevPpsTimeMs 79043778 0 86399400 400 79045178 ms
+// BL: 86399800  ppsTimeMs 79044778, m_ppsTimeMs 79044778, m_prevPpsTimeMs 79043778 0 86399600 600 79045378 ms
+            //   ppsTimeMs 79045778, m_ppsTimeMs 79045778, m_prevPpsTimeMs 79044778 0 0 0          79045778 ms
+// BL: 0         ppsTimeMs 79045778, m_ppsTimeMs 79045778, m_prevPpsTimeMs 79044778 0 86399800 800 79046578 ms    
+    bl = (bltime_t){79044778000, 79043778000, 86399200, 86399000};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79044778000, 79043778000, 86399000, 86398800};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79044778000, 79043778000, 86399200, 86399000};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79044778000, 79043778000, 86399400, 86399200};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79044778000, 79043778000, 86399600, 86399400};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79044778000, 79043778000, 86399800, 86399600};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79045778000, 79044778000, 200, 0};
+    PrintPacketTime(&bl);    
+    bl = (bltime_t){79045778000, 79044778000, 0, 86399800};
+    PrintPacketTime(&bl);    
+
     return 0;
 }
 
@@ -71,8 +111,8 @@ void PrintPacketTime(bltime_t *bl)
 
     m_ppsTimeUs = bl->m_ppsTimeUs;
     m_prevPpsTimeUs = bl->m_prevPpsTimeUs;
-    // bool usePrevPpsTs = (bl->m_timeMs < bl->m_timeStampMs) && ((bl->m_timeStampMs % 1000) == 0);
-    bool usePrevPpsTs = (bl->m_timeStampMs % 1000) == 0;
+    bool usePrevPpsTs = (bl->m_timeMs < bl->m_timeStampMs) && ((bl->m_timeStampMs % 1000) == 0);
+    // bool usePrevPpsTs = (bl->m_timeStampMs % 1000) == 0;
 
     packet_timeStampUs = TodToSystemTimeUs(bl->m_timeMs, usePrevPpsTs, false); // convert to local time
     // bl->m_timeStampMs, bl->m_timeMs, usePrevPpsTs, packet_timeStampUs, (uint32_t)(packet_timeStampUs/1000));
