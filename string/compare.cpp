@@ -33,6 +33,9 @@ int main()
 
     if (message.compare(UBX::message2) == 0)
         cout << "same" << endl;
+
+    if (message == "abcd")
+        cout << "TRUE" << endl;
         
     return 0;
 }
