@@ -99,16 +99,27 @@ static int ConvertHex2Str(uint8_t *buffer);
 
 int g_grilCmdStartIndex;
 
+// load OAF
 void test20()
 {
-    int startIndex=0;
     int ret;
-    char buf1[] = ">>001a\n%ABC%print,/par/pwr/bat/a\r\n%print,/par/rcv/ver/pwr/sn\r\n>>002a";
-    // char buf2[] = "b\n%%print,/par/pwr/bat/a\r\n>>002>>\n";
+    int i;
+    int len;
+    char buf[][11024] = {
+        "02000012c18b7d09359cec74c38296abef216d3790f80bc7eb9efde885a2680029d471a3f003",
+        "02000012c18b7d09359cec74c38296abef216d3790f80bc7eb9efde885a2680029d471a3f003",
+        "02000012c18b7d09359cec74c38296abef216d3790f80bc7eb9efde885a2680029d471a3f003",
+        "02000012c18b7d09359cec74c38296abef216d3790f80bc7eb9efde885a2680029d471a3f003",
+        };
 
-    ret = ProcessCustomGrilCommand(buf1, strlen(buf1), &startIndex, CUSTOM_GRIL_BLUETOOTH);
-    printf("RET: %d\n", ret);
-    printf("############### %s done\n", __FUNCTION__);
+    for (i=0; i<4; i++)
+    {
+        len = ConvertHex2Str((uint8_t *)buf[i]);
+        ret = InterceptCustomGrilMessage((uint8_t *)buf[i], len, CUSTOM_GRIL_BLUETOOTH);
+        PrintBufferBin((uint8_t *)buf[i], len);
+        printf("RET: %d\n", ret);
+    }
+    printf("############### %s done\n", __FUNCTION__);    
 }
 #if 0
 b'#OFF#\r\n'
@@ -564,23 +575,21 @@ void test1()
 }
 int main() 
 {
-    // test1();
-    // test2();
-    // test3();
-    // test4();
-    // test5();
-    // test6();
-    // test7();
+#if 0
+    test1();
+    test2();
+    test3();
+    test4();
+    test5();
+    test6();
+    test7();
 
-    // test8();
-    // test8();
-    // test9();
     test10();
     test11();
     test12();
     test13();
-
-    // test20();
+#endif
+    test20();
     return 0;
 }
 
