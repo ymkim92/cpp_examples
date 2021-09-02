@@ -663,8 +663,13 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
             }
             cnt += 1;
         }
-        printfLog(D_Info, "Outgoing msg:");
-        PrintBufferBin((uint8_t *)buffer, len);
+
+        if (startIndex != len)
+        {
+            printfLog(D_Warning, "WARN: startIndex is different with len!! %d != %d\r\n", startIndex, len);
+        }
+        printfLog(D_Info, "Outgoing msg [%d]\r\n", len);
+//        PrintBufferBin((uint8_t *)buffer, len);
     }
     return len;
 }
@@ -710,16 +715,16 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
     {
         int r;
         r = SaveCmdPart(savedBuffer, &savedBufferLen, buffer, len, cmdStartIndex);
+        len = RemoveCmdPart(cmdStartIndex);
         if (r < 0)
             return r;
-        len = RemoveCmdPart(cmdStartIndex);
     }
     else
     {
         if (savedBufferLen)
         {
             if (cmdStartIndex != 0)
-                printfLog(D_Warning, "WARN: cmdStartInde is not zero %d\r\n", cmdStartIndex);            
+                printfLog(D_Warning, "WARN: cmdStartInde is not zero %d\r\n", cmdStartIndex);
             *newStartIndex += savedBufferLen;
             len = AddSavedDataToBuffer(buffer, len, savedBuffer, &savedBufferLen);
         }
@@ -807,10 +812,10 @@ static int ProcessPercentPrefix(char* data, unsigned int len, char *percentPrefi
     percentPrefix[0] = '\0';
     if (g_grilCmdStartIndex==0)
         return PERCENT_PREFIX_NO;
-    
+
     if (g_grilCmdStartIndex >= PERCENT_PREFEX_BUFFER_SIZE)
         return PERCENT_PREFIX_TOO_LONG;
-    
+
     if (g_grilCmdStartIndex == 1)
         return PERCENT_PREFIX_TOO_SHORT;
 
@@ -833,7 +838,7 @@ static int SaveCmdPart(char *savedBuffer, int *savedBufferLen, char *buffer, int
     }
     memcpy(savedBuffer + *savedBufferLen, &buffer[cmdStartIndex], tmpLen);
     *savedBufferLen += tmpLen;
-    printfLog(D_Info, "Save CmdPart %d bytes, total bytes: %d\n", tmpLen, *savedBufferLen);
+    printfLog(D_Info, "Save CmdPart %d bytes, total bytes: %d\r\n", tmpLen, *savedBufferLen);
     return CUSTOM_GRIL_STATE_OK;
 }
 
@@ -887,7 +892,7 @@ static int GetIncomingMessageType(uint8_t *buffer, int len, int *newStartIndex)
                 corrLen = 0;
                 return INCOMING_MSG_STATE_COMMAND;
             }
-        } 
+        }
         else if (j < 5)
         {
             corrLenString[j-2] = buffer[i];
@@ -910,7 +915,7 @@ static int GetIncomingMessageType(uint8_t *buffer, int len, int *newStartIndex)
     corrRecvSize = j;
     *newStartIndex = i;
 
-    corrRecvSizeInThis = startIndex+corrLen+SIZE_GRIL_PREFIX+1 - prevCorrRecvSize; 
+    corrRecvSizeInThis = startIndex+corrLen+SIZE_GRIL_PREFIX+1 - prevCorrRecvSize;
     if (corrRecvSizeInThis == len)
     {
         corrRecvSize = 0;
