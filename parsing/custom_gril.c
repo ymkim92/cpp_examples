@@ -26,6 +26,7 @@
 
 #define CMD_STATE_FOUND             0
 #define CMD_STATE_PART              1
+#define CMD_STATE_INVISIBLE         -1
 // #define CMD_STATE_FOUND_TO_END      0
 // #define CMD_STATE_FOUND_AND_MORE    1
 #define CR '\n'
@@ -71,12 +72,14 @@ TopconGpsCustomGrilStats g_GpsCustomGrilStats;
 #define INCOMING_MSG_STATE_NO_MESSAGE                       0 
 #define INCOMING_MSG_STATE_CORRECTION_TO_END_AND_MORE       -1
 #define INCOMING_MSG_STATE_COMMAND                          -2  
+#define INCOMING_MSG_STATE_UNKNOWN_STRING                   -3
 
 #define KEYWORD_SEARCH_NOT_FOUND                -1
 
 static int AddSavedDataToBuffer(char *buffer, int len, char *savedBuffer, int *savedBufferLen);
 static int hex2int(char *hex);
 static int GetIncomingMessageType(uint8_t *buffer, int len, int *newStartIndex);
+static bool IsVisibleCharExceptLfCr(char c);
 
 static int SearchKeyword(char* data, unsigned int len, const char *keyword);
 static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, device_type dev);
@@ -312,6 +315,33 @@ static int ConvertHex2Str(uint8_t *buffer)
 }
 
 
+void test14()
+{
+    int startIndex=0;
+    int ret, i;
+    char buf1[] = "%%print,/par/pwr/bat/a\r\n%034%print,/par/rcv/ver/pwr/sn@32\r\n";
+
+    ret = ProcessCustomGrilCommand(buf1, strlen(buf1), &startIndex, CUSTOM_GRIL_BLUETOOTH);
+    printf("RET: %d\n", ret);
+    printf("START IDX: %d\n", startIndex);
+    assert(ret==35);
+    assert(startIndex==0);
+
+    ret = ProcessCustomGrilCommand(buf1, strlen(buf1), &startIndex, CUSTOM_GRIL_BLUETOOTH);
+    printf("RET: %d\n", ret);
+    printf("START IDX: %d\n", startIndex);
+    assert(ret==0);
+    assert(startIndex==0);
+    // PrintBuffer((uint8_t *)buf2, ret);
+    // assert(startIndex==7);
+    // for (i=0; i<2; i++)
+    // {
+    //     ret = InterceptCustomGrilMessage((uint8_t *)buf[i], strlen(buf[i]), CUSTOM_GRIL_BLUETOOTH);
+    //     PrintBuffer((uint8_t *)buf[i], ret);
+    //     printf("RET: %d\n", ret);
+    // }
+    printf("############### %s done\n", __FUNCTION__);
+}
 void test13()
 {
     int startIndex=0;
@@ -589,7 +619,8 @@ int main()
     test12();
     test13();
 #endif
-    test20();
+    test14();
+    // test20();
     return 0;
 }
 
@@ -639,9 +670,11 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
     {
         int ret;
         int newLen;
+        int origLen;
         int startIndex = 0;
         int cnt = 0;
 
+        origLen = len;
         //                    printfLog(D_Info, "RECV:");
         //                    PrintBufferBin(gpsSecSerInBuf, readBytes);
 
@@ -655,7 +688,7 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
             if (newLen >= 0)
                 len = newLen;
 
-            if (cnt > 10)
+            if (cnt > 256)
             {
                 printfLog(D_Info, "ERROR in message [%d]:\r\n", cnt);
                 PrintBufferBin(buffer, len);
@@ -664,10 +697,11 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
             cnt += 1;
         }
 
-        if (startIndex != len)
+        if ((origLen == len) && (startIndex != len))
         {
             printfLog(D_Warning, "WARN: startIndex is different with len!! %d != %d\r\n", startIndex, len);
         }
+
         printfLog(D_Info, "Outgoing msg [%d]\r\n", len);
 //        PrintBufferBin((uint8_t *)buffer, len);
     }
@@ -678,8 +712,15 @@ static int SearchStringEndingLfCr(char *buffer, int len, int *startIndex)
 {
     int i;
     bool found=false;
+    bool visibleChar=true;
     for (i=*startIndex; i<len; i++)
     {
+        if (!IsVisibleCharExceptLfCr(buffer[i]))
+        {
+            visibleChar = false;
+            i += 1;
+            break;
+        }
         if (!found)
         {
             if ((buffer[i] == CR) || (buffer[i] == LF))
@@ -691,10 +732,15 @@ static int SearchStringEndingLfCr(char *buffer, int len, int *startIndex)
     }
 
     *startIndex = i;
-    if (found)
-        return CMD_STATE_FOUND;
-    else
-        return CMD_STATE_PART;
+    if (visibleChar == false)
+        return CMD_STATE_INVISIBLE;
+    else 
+    {
+        if (found)
+            return CMD_STATE_FOUND;
+        else
+            return CMD_STATE_PART;
+    }
 }
 
 // return int: outgoing buffer len
@@ -718,6 +764,11 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
         len = RemoveCmdPart(cmdStartIndex);
         if (r < 0)
             return r;
+    }
+    else if (ret == CMD_STATE_INVISIBLE)
+    {
+        savedBufferLen = 0;
+        percentPrefix[0] = '\0';
     }
     else
     {
@@ -797,6 +848,8 @@ static int SearchKeyword(char* data, unsigned int len, const char *keyword)
                 ret = i;
             if (ki == strlen(keyword)-1)
             {
+                if ((data[i+1] == '@'))
+                    return ret;
                 if ((data[i+1] != CR) && data[i+1] != LF)
                     return KEYWORD_SEARCH_NOT_FOUND;
                 return ret;
@@ -970,4 +1023,39 @@ static int AddSavedDataToBuffer(char *buffer, int len, char *savedBuffer, int *s
     len += *savedBufferLen;
     *savedBufferLen = 0;
     return len;
+}
+
+// bool IsValidCommand(uint8_t *buffer, int len, int *startIndex)
+// {
+//     int si = *startIndex;
+//     int i;
+//     bool found=false;
+
+//     if ((buffer[si] != '%') && (buffer[si] != 'p') && (buffer[si] != 's'))
+//     {
+//         *startIndex += 1;
+//         return false;
+//     }
+
+//     for (i=*startIndex+1; i<len; i++)
+//     {
+//         if (!found)
+//         {
+//             if ((buffer[i] == CR) || (buffer[i] == LF))
+//                 found = true;
+//         }
+//         else
+//             if ((buffer[i] != CR) && (buffer[i] != LF))
+//                 break;
+//     }
+
+//     *startIndex = i;
+//     return true;
+// }
+
+static bool IsVisibleCharExceptLfCr(char c)
+{
+    if ((c == CR) || (c == LF))
+        return true;
+    return (c > 32) && (c<126);
 }
