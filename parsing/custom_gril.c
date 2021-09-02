@@ -494,7 +494,7 @@ void test1()
 }
 int main() 
 {
-#if 0
+#if 1
     test1();
     test2();
     test3();
