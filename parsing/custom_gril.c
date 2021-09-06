@@ -26,7 +26,7 @@
 
 #define CMD_STATE_FOUND             0
 #define CMD_STATE_PART              1
-#define CMD_STATE_INVISIBLE         -1
+#define CMD_STATE_BINDATA         -1
 // #define CMD_STATE_FOUND_TO_END      0
 // #define CMD_STATE_FOUND_AND_MORE    1
 #define CR '\n'
@@ -77,13 +77,14 @@ TopconGpsCustomGrilStats g_GpsCustomGrilStats;
 #define KEYWORD_SEARCH_NOT_FOUND                -1
 
 static int AddSavedDataToBuffer(char *buffer, int len, char *savedBuffer, int *savedBufferLen);
-static int hex2int(char *hex);
+static int hex2int(char *hex, int size);
 static int GetIncomingMessageType(uint8_t *buffer, int len, int *newStartIndex);
-static bool IsVisibleCharExceptLfCr(char c);
+static bool IsEndOfBinData(char c);
+static bool IsChecksumOkay(char *buffer, int len, int csIndex);
 
 static int SearchKeyword(char* data, unsigned int len, const char *keyword);
 static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, device_type dev);
-static int SearchStringEndingLfCr(char *buffer, int len, int *startIndex);
+static int SearchStringEoc(char *buffer, int len, int *startIndex);
 static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev);
 static int SearchCustomGrilCommand(char *buffer, int len);
 static int SaveCmdPart(char *savedBuffer, int *savedBufferLen, char *buffer, int len, int cmdStartIndex);
@@ -99,6 +100,7 @@ static void PrintBufferBin(uint8_t *buffer, int len);
 static void RunCustomGrilCommand(int a_cmdIndex, device_type dev, char *percentPrefix);
 static int hex22int(char *hex);
 static int ConvertHex2Str(uint8_t *buffer);
+static uint8_t Checksum(const uint8_t* data, int size);
 
 int g_grilCmdStartIndex;
 
@@ -219,12 +221,48 @@ static int ConvertHex2Str(uint8_t *buffer)
     return i;
 }
 
+void test_cmd_checksum()
+{
+    int startIndex=0;
+    int ret;
+    char buf1[] = "%sgl?81%putopt,/log/OAF:{10,32},0@ED\r\n";
+    char buf2[] = "%034%print,/par/rcv/ver/pwr/sn@34\r\n";
+
+    ret = ProcessCustomGrilCommand(buf1, strlen(buf1), &startIndex, CUSTOM_GRIL_BLUETOOTH);
+    printf("RET: %d\n", ret);
+    printf("START IDX: %d\n", startIndex);
+    assert(ret==38);
+    assert(startIndex==38);
+
+    startIndex = 0;
+    ret = ProcessCustomGrilCommand(buf2, strlen(buf2), &startIndex, CUSTOM_GRIL_BLUETOOTH);
+    printf("RET: %d\n", ret);
+    printf("START IDX: %d\n", startIndex);
+    assert(ret==0);
+    assert(startIndex==0);
+    printf("############### %s done\n", __FUNCTION__);
+}
+
+void test15()
+{
+    int startIndex=0;
+    int ret;
+    char buf1[] = "%%print,/par/pwr/bat/a && %034%print,/par/rcv/ver/pwr/sn@32\r\n";
+
+    ret = ProcessCustomGrilCommand(buf1, strlen(buf1), &startIndex, CUSTOM_GRIL_BLUETOOTH);
+    printf("RET: %d\n", ret);
+    printf("START IDX: %d\n", startIndex);
+    assert(ret==0);
+    assert(startIndex==0);
+
+    printf("############### %s done\n", __FUNCTION__);
+}
 
 void test14()
 {
     int startIndex=0;
     int ret;
-    char buf1[] = "%%print,/par/pwr/bat/a\r\n%034%print,/par/rcv/ver/pwr/sn@32\r\n";
+    char buf1[] = "%%print,/par/pwr/bat/a\r\n%034%print,/par/rcv/ver/pwr/sn@34\r\n";
 
     ret = ProcessCustomGrilCommand(buf1, strlen(buf1), &startIndex, CUSTOM_GRIL_BLUETOOTH);
     printf("RET: %d\n", ret);
@@ -320,21 +358,21 @@ void test10()
     char buf2[] = "01\n%ABC%printk,";
     char buf3[] = "/par/pwr/bat/a\r\n";
 
-    ret = SearchStringEndingLfCr(buf1, strlen(buf1), &startIndex);
+    ret = SearchStringEoc(buf1, strlen(buf1), &startIndex);
     printf("RET: %d\n", ret);
     printf("START IDX: %d\n", startIndex);
     assert(ret==CMD_STATE_FOUND);
     assert(startIndex==28);
 
     startIndex = 3;
-    ret = SearchStringEndingLfCr(buf2, strlen(buf2), &startIndex);
+    ret = SearchStringEoc(buf2, strlen(buf2), &startIndex);
     printf("RET: %d\n", ret);
     printf("START IDX: %d\n", startIndex);
     assert(ret==CMD_STATE_PART);
     assert(startIndex==15);
 
     startIndex = 0;
-    ret = SearchStringEndingLfCr(buf3, strlen(buf3), &startIndex);
+    ret = SearchStringEoc(buf3, strlen(buf3), &startIndex);
     printf("RET: %d\n", ret);
     printf("START IDX: %d\n", startIndex);
     assert(ret==CMD_STATE_FOUND);
@@ -508,10 +546,13 @@ int main()
     test12();
     test13();
     test14();
-
-    test20();
+    test15();
 #endif
+    test_cmd_checksum();
+#if 1
+    test20();
     test21();
+#endif
     return 0;
 }
 
@@ -551,6 +592,25 @@ static void PrintBuffer(uint8_t *buffer, int len)
     printf("\r\n");
 }
 
+static inline uint8_t RotLeft(uint8_t val)
+{
+    const int bits = 8;
+    const int lShift = 2;
+    const int rShift = bits - lShift;
+
+    return ((val << lShift) | (val >> rShift));
+}
+
+static uint8_t Checksum(const uint8_t* data, int size)
+{
+    uint8_t res = 0;
+    int i;
+    for (i=0; i<size; i++)
+    {
+        res = RotLeft(res) ^ data[i];
+    }
+    return RotLeft(res);
+}
 
 
 // ######################################################################################################
@@ -599,16 +659,16 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
     return len;
 }
 
-static int SearchStringEndingLfCr(char *buffer, int len, int *startIndex)
+static int SearchStringEoc(char *buffer, int len, int *startIndex)
 {
     int i;
     bool found=false;
-    bool visibleChar=true;
+    bool IsBinData=false;
     for (i=*startIndex; i<len; i++)
     {
-        if (!IsVisibleCharExceptLfCr(buffer[i]))
+        if (IsEndOfBinData(buffer[i]))
         {
-            visibleChar = false;
+            IsBinData = true;
             i += 1;
             break;
         }
@@ -623,8 +683,8 @@ static int SearchStringEndingLfCr(char *buffer, int len, int *startIndex)
     }
 
     *startIndex = i;
-    if (visibleChar == false)
-        return CMD_STATE_INVISIBLE;
+    if (IsBinData)
+        return CMD_STATE_BINDATA;
     else 
     {
         if (found)
@@ -646,7 +706,7 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
     static char percentPrefix[PERCENT_PREFEX_BUFFER_SIZE];
 
     cmdStartIndex = *newStartIndex;
-    ret = SearchStringEndingLfCr(buffer, len, newStartIndex);
+    ret = SearchStringEoc(buffer, len, newStartIndex);
 
     if (ret == CMD_STATE_PART)
     {
@@ -670,7 +730,7 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
             *newStartIndex += savedBufferLen;
             len = AddSavedDataToBuffer(buffer, len, savedBuffer, &savedBufferLen);
         }
-        if (ret == CMD_STATE_INVISIBLE)
+        if (ret == CMD_STATE_BINDATA)
         {
             savedBufferLen = 0;
             percentPrefix[0] = '\0';
@@ -747,8 +807,18 @@ static int SearchKeyword(char* data, unsigned int len, const char *keyword)
             if (ki == strlen(keyword)-1)
             {
                 char c = data[i+1];
-                if ((c == '@') || (c ==';') || (c =='&') || (c=='|') || (c==CR) || (c==LF))
+                if ((c == '@') || (c ==';') || (c =='&') || (c=='|') || (c==' ') || (c==CR) || (c==LF))
+                {
+                    if (c=='@')
+                    {
+                        if (!IsChecksumOkay(data, len, i+2))
+                        {
+                            printfLog(D_Warning, "WARN: Checksum is not correct in the target command\r\n");
+                            return KEYWORD_SEARCH_NOT_FOUND;
+                        }
+                    }
                     return ret;
+                }
                 else
                     return KEYWORD_SEARCH_NOT_FOUND;
             }
@@ -849,7 +919,7 @@ static int GetIncomingMessageType(uint8_t *buffer, int len, int *newStartIndex)
             corrLenString[j-2] = buffer[i];
             if (j==4)
             {
-                corrLen = hex2int(corrLenString);
+                corrLen = hex2int(corrLenString, 3);
                 if (corrLen < 0)
                 {
                     if (corrRecvSize)
@@ -883,11 +953,11 @@ static int GetIncomingMessageType(uint8_t *buffer, int len, int *newStartIndex)
     return INCOMING_MSG_STATE_CORRECTION_TO_END_AND_MORE;
 }
 
-static int hex2int(char *hex)
+static int hex2int(char *hex, int size)
 {
     int i;
     uint32_t val = 0;
-    for (i=0; i<3; i++)
+    for (i=0; i<size; i++)
     {
         uint8_t byte = hex[i];
         // transform hex character to the 4bit equivalent number, using the ascii table indexes
@@ -923,9 +993,16 @@ static int AddSavedDataToBuffer(char *buffer, int len, char *savedBuffer, int *s
     return len;
 }
 
-static bool IsVisibleCharExceptLfCr(char c)
+static bool IsEndOfBinData(char c)
 {
-    if ((c == CR) || (c == LF))
-        return true;
-    return (c > 32) && (c<126);
+    return c == 3;
+}
+
+static bool IsChecksumOkay(char *buffer, int len, int csIndex)
+{
+    uint8_t writtenCs;
+    uint8_t calculatedCs = Checksum((uint8_t *)buffer, csIndex);
+    writtenCs = hex2int(&buffer[csIndex], 2);
+
+    return calculatedCs == writtenCs;
 }
