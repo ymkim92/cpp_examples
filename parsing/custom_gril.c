@@ -301,7 +301,7 @@ void test11()
     printf("RET: %d\n", ret);
     printf("START IDX: %d\n", startIndex);
     assert(ret==0);
-    assert(startIndex==12);
+    assert(startIndex==0);
 
     startIndex = 0;
     ret = ProcessCustomGrilCommand(buf3, strlen(buf3), &startIndex, CUSTOM_GRIL_BLUETOOTH);
@@ -673,7 +673,7 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
         if (ret == CMD_STATE_INVISIBLE)
         {
             savedBufferLen = 0;
-            percentPrefix[-1] = '\0';
+            percentPrefix[0] = '\0';
         }
         else
         {
@@ -746,11 +746,11 @@ static int SearchKeyword(char* data, unsigned int len, const char *keyword)
                 ret = i;
             if (ki == strlen(keyword)-1)
             {
-                if ((data[i+1] == '@'))
+                char c = data[i+1];
+                if ((c == '@') || (c ==';') || (c =='&') || (c=='|') || (c==CR) || (c==LF))
                     return ret;
-                if ((data[i+1] != CR) && data[i+1] != LF)
+                else
                     return KEYWORD_SEARCH_NOT_FOUND;
-                return ret;
             }
             ki += 1;
         }
@@ -922,34 +922,6 @@ static int AddSavedDataToBuffer(char *buffer, int len, char *savedBuffer, int *s
     *savedBufferLen = 0;
     return len;
 }
-
-// bool IsValidCommand(uint8_t *buffer, int len, int *startIndex)
-// {
-//     int si = *startIndex;
-//     int i;
-//     bool found=false;
-
-//     if ((buffer[si] != '%') && (buffer[si] != 'p') && (buffer[si] != 's'))
-//     {
-//         *startIndex += 1;
-//         return false;
-//     }
-
-//     for (i=*startIndex+1; i<len; i++)
-//     {
-//         if (!found)
-//         {
-//             if ((buffer[i] == CR) || (buffer[i] == LF))
-//                 found = true;
-//         }
-//         else
-//             if ((buffer[i] != CR) && (buffer[i] != LF))
-//                 break;
-//     }
-
-//     *startIndex = i;
-//     return true;
-// }
 
 static bool IsVisibleCharExceptLfCr(char c)
 {
