@@ -1,3 +1,4 @@
+// gcc -g -o custom_gril custom_gril.c -Wall
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -6,11 +7,12 @@
 #include <assert.h>
 #include <stdarg.h>  
 
-#define D_Info      0
-#define D_Warning   1
-#define D_Error     2
+#define D_Debug     0
+#define D_Info      1
+#define D_Warning   2
+#define D_Error     3
 
-#define INCOMING_MSG_BUFFER_SIZE        128
+#define GPS_SEC_SER_IN_BUF_SIZE         256
 #define SAVED_BUFFER_SIZE               128
 #define PERCENT_PREFEX_BUFFER_SIZE      32
 
@@ -614,7 +616,6 @@ static uint8_t Checksum(const uint8_t* data, int size)
 
 
 // ######################################################################################################
-
 static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
 {
     if (len > 0)
@@ -639,7 +640,7 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
             if (newLen >= 0)
                 len = newLen;
 
-            if (cnt > 256)
+            if (cnt > 10)
             {
                 printfLog(D_Info, "ERROR in message [%d]:\r\n", cnt);
                 PrintBufferBin(buffer, len);
@@ -653,7 +654,7 @@ static int InterceptCustomGrilMessage(uint8_t *buffer, int len, device_type dev)
             printfLog(D_Warning, "WARN: startIndex is different with len!! %d != %d\r\n", startIndex, len);
         }
 
-        printfLog(D_Info, "Outgoing msg [%d]\r\n", len);
+        printfLog(D_Debug, "Outgoing msg [%d]\r\n", len);
 //        PrintBufferBin((uint8_t *)buffer, len);
     }
     return len;
@@ -685,7 +686,7 @@ static int SearchStringEoc(char *buffer, int len, int *startIndex)
     *startIndex = i;
     if (IsBinData)
         return CMD_STATE_BINDATA;
-    else 
+    else
     {
         if (found)
             return CMD_STATE_FOUND;
@@ -721,7 +722,7 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
         len = RemoveCmdPart(cmdStartIndex);
         *newStartIndex = len;
     }
-    else 
+    else
     {
         if (savedBufferLen)
         {
@@ -740,7 +741,7 @@ static int ProcessCustomGrilCommand(char *buffer, int len, int *newStartIndex, d
             grilCmdIndex = SearchCustomGrilCommand(&buffer[cmdStartIndex], *newStartIndex);
             ProcessPercentPrefix(&buffer[cmdStartIndex], len, percentPrefix);
 
-            printfLog(D_Info, "grilCmdIndex: %d\r\n", grilCmdIndex);
+            printfLog(D_Debug, "grilCmdIndex: %d\r\n", grilCmdIndex);
             if (grilCmdIndex >= 0)
             {
                 RunCustomGrilCommand(grilCmdIndex, dev, percentPrefix);
@@ -854,12 +855,12 @@ static int SaveCmdPart(char *savedBuffer, int *savedBufferLen, char *buffer, int
     int tmpLen = len - cmdStartIndex;
     if (*savedBufferLen + tmpLen > SAVED_BUFFER_SIZE)
     {
-        printfLog(D_Warning, "INCOMING DATA TOO BIG 2\r\n");
-        return CUSTOM_GRIL_STATE_TOO_BIG_DATA2;
+        printfLog(D_Warning, "INCOMING DATA TOO BIG: %d+%d=%d\r\n", *savedBufferLen, tmpLen, *savedBufferLen + tmpLen);
+        return CUSTOM_GRIL_STATE_TOO_BIG_DATA;
     }
     memcpy(savedBuffer + *savedBufferLen, &buffer[cmdStartIndex], tmpLen);
     *savedBufferLen += tmpLen;
-    printfLog(D_Info, "Save CmdPart %d bytes, total bytes: %d\r\n", tmpLen, *savedBufferLen);
+    printfLog(D_Debug, "Save CmdPart %d bytes, total bytes: %d\r\n", tmpLen, *savedBufferLen);
     return CUSTOM_GRIL_STATE_OK;
 }
 
@@ -975,7 +976,7 @@ static int hex2int(char *hex, int size)
 static int AddSavedDataToBuffer(char *buffer, int len, char *savedBuffer, int *savedBufferLen)
 {
     int i;
-    if (*savedBufferLen + len > SAVED_BUFFER_SIZE)
+    if (*savedBufferLen + len > GPS_SEC_SER_IN_BUF_SIZE)
     {
         printfLog(D_Info, "Saved data is too big\r\n");
         *savedBufferLen = 0;
