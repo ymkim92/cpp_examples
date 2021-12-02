@@ -1,5 +1,9 @@
 #include <iostream>
 #include <sstream>
+#include <iomanip>
+#include <cstdint>
+
+static void TestSs();
 
 int main()
 {
@@ -31,5 +35,19 @@ int main()
     ss >> c >> ch; 
     ret = ss.eof();
     std::cout << c << ", eof:" << ret << std::endl;
+
+    TestSs();
     return 0;
+}
+
+static void TestSs()
+{
+    uint32_t m_s1_1 = 0x12;
+    uint32_t m_s1_2 = 0x34;
+    std::stringstream ss;
+    ss
+            << std::dec << m_s1_2
+            << std::uppercase << std::setfill('0') << std::setw(1) << std::hex << (((uint32_t)m_s1_1 >> 16) & 0xf)
+            // << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << (uint32_t)m_s1_1 & 0xffff
+            ;
 }
