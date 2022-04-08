@@ -186,17 +186,14 @@ void lrfMsgData(struct lrfMsgState * state)
     {
         ui8Checksum += message[state->m_pos];
         ui8LrfData[state->m_posFromSync - LRF_MSG_HEADER_SIZE] = message[state->m_pos];
-        state->m_pos += 1;
-        state->m_posFromSync += 1;
     }
     else
     {
         bLrfDataReady = CompareLrfMessageChecksum(ui8Checksum, message[state->m_pos]);
-
         state->m_next = lrfMsgWait;
-        state->m_pos += 1;
-        state->m_posFromSync += 1;
     }
+    state->m_pos += 1;
+    state->m_posFromSync += 1;
 }
 
 void lrfMsgConfigLaserPoint(struct lrfMsgState * state)
@@ -213,17 +210,14 @@ void lrfMsgConfigLaserPoint(struct lrfMsgState * state)
             state->m_pos += size;
             return;
         }
-        state->m_pos += 1;
-        state->m_posFromSync += 1;
     }
     else
     {
         bLrfConfigOk = CompareLrfMessageChecksum(ui8Checksum, message[state->m_pos]);
-
         state->m_next = lrfMsgWait;
-        state->m_pos += 1;
-        state->m_posFromSync += 1;
     }
+    state->m_pos += 1;
+    state->m_posFromSync += 1;
 }
 
 void lrfMsgStatus(struct lrfMsgState * state)
