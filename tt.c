@@ -6,88 +6,107 @@
 #include <stdlib.h>
 #include <stdbool.h>
  
-void SPI_PackMagProbeStatus(uint32_t *dst, bool pIdStatus, uint8_t pId);
-void SPI_UnpackMagProbeStatus(bool *pIdStatus, uint8_t *pId, uint32_t src);
-void SPI_PackMagConfig(uint32_t *dst, bool autoSetReset, uint8_t cmFreq, uint8_t prdSet);
-void SPI_UnpackMagConfig(bool *autoSetReset, uint8_t *cmFreq, uint8_t *prdSet, uint32_t src);
-void SPI_PackMagConfigStatus(uint32_t *dst, bool autoSetReset, bool cmFreq, bool prdSet);
-void SPI_UnpackMagConfigStatus(bool *autoSetReset, bool *cmFreq, bool *prdSet, uint32_t src);
+
+#define	LRF_DEVICE_NAME_LEN		3
+
+void SPI_PackLrfProbeStatus(uint32_t *dst, bool probeFlag, uint8_t *deviceName3Chars);
+void SPI_UnpackLrfProbeStatus(bool *probeFlag, uint8_t *deviceName3Chars, uint32_t src);
+void SPI_PackLrfConfig(uint32_t *dst, bool laserPointer, uint8_t cmFreq, uint8_t minRange, uint8_t maxRange);
+void SPI_UnpackLrfConfig(bool *laserPointer, uint8_t *cmFreq, uint8_t *minRange, uint8_t *maxRange, uint32_t src);
+void SPI_PackLrfConfigStatus(uint32_t *dst, bool minRangeFlag, bool maxRangeFlag, bool cmFlag);
+void SPI_UnpackLrfConfigStatus(bool *minRangeFlag, bool *maxRangeFlag, bool *cmFlag, uint32_t src);
 
 int main()
 {
 	uint32_t data;
 	{
-		bool pIdStatus;
-		uint8_t pId;
+		int i;
+		bool probeFlag;
+		uint8_t name[3];
 
-		SPI_PackMagProbeStatus(&data, false, 0x41);
+		SPI_PackLrfProbeStatus(&data, true, "abc");
 		printf("0x%X\n", data);
-		SPI_UnpackMagProbeStatus(&pIdStatus, &pId, 0xffffffff);
-		printf("flag: %d, ID: 0x%x\n", pIdStatus, pId);
+		SPI_UnpackLrfProbeStatus(&probeFlag, name, 0xffffffff);
+		printf("flag: %d, name: ", probeFlag);
+		for (i=0; i<3; i++)
+			printf("%c", name[i]);
 
-		SPI_UnpackMagProbeStatus(&pIdStatus, &pId, data);
-		printf("flag: %d, ID: 0x%x\n", pIdStatus, pId);
+		printf("\n");
+
+		SPI_UnpackLrfProbeStatus(&probeFlag, name, data);
+		printf("flag: %d, name: ", probeFlag);
+		for (i=0; i<3; i++)
+			printf("%c", name[i]);
+
+		printf("\n");
 	}
 	{
-		bool autoSetReset;
+		bool laserPointer;
 		uint8_t cmFreq;
-		uint8_t prdSet;
-		SPI_PackMagConfig(&data, true, 3, 5);
+		uint8_t minRange;
+		uint8_t maxRange;
+		SPI_PackLrfConfig(&data, true, 1, 2, 3);
 		printf("0x%X\n", data);
-		SPI_UnpackMagConfig(&autoSetReset, &cmFreq, &prdSet, data);
-		printf("flag: %d, cmFreq: 0x%x, prdSet: 0x%x\n", autoSetReset, cmFreq, prdSet);
+		SPI_UnpackLrfConfig(&laserPointer, &cmFreq, &minRange, &maxRange, data);
+		printf("laser: %d, cmFreq: 0x%x, minRange: 0x%x, maxRange: 0x%x\n", laserPointer, cmFreq, minRange, maxRange);
 	}
 
 	{
-		bool autoSetReset;
-		bool cmFreq;
-		bool prdSet;
-		SPI_PackMagConfigStatus(&data, 1, 0, 1);
+		bool min;
+		bool max;
+		bool cm;
+		SPI_PackLrfConfigStatus(&data, 1, 0, 1);
 		printf("0x%X\n", data);
-		SPI_UnpackMagConfigStatus(&autoSetReset, &cmFreq, &prdSet, data);
-		printf("flag: %d, cmFreq: 0x%x, prdSet: 0x%x\n", autoSetReset, cmFreq, prdSet);
-
+		SPI_UnpackLrfConfigStatus(&min, &max, &cm, data);
+		printf("min: %d, max: 0x%x, cm: 0x%x\n", min, max, cm);
 	}
-
     return 0;
 }
 
-void SPI_PackMagProbeStatus(uint32_t *dst, bool pIdStatus, uint8_t pId)
+void SPI_PackLrfProbeStatus(uint32_t *dst, bool probeFlag, uint8_t *deviceName3Chars)
 {
-	*dst = pId;
-	*dst |= pIdStatus << 8;
+	int i = LRF_DEVICE_NAME_LEN;
+	*dst = probeFlag << 24;
+	for (i=0; i<LRF_DEVICE_NAME_LEN; i++) {
+		*dst |= deviceName3Chars[i] << 8*(LRF_DEVICE_NAME_LEN-1-i);
+	}
 }
 
-void SPI_UnpackMagProbeStatus(bool *pIdStatus, uint8_t *pId, uint32_t src)
+void SPI_UnpackLrfProbeStatus(bool *probeFlag, uint8_t *deviceName3Chars, uint32_t src)
 {
-	*pId = src&0xff;
-	*pIdStatus = (src>>8) & 1;
+	int i = LRF_DEVICE_NAME_LEN;
+	*probeFlag = (src>>24) & 1;
+	for (i=0; i<LRF_DEVICE_NAME_LEN; i++) {
+		deviceName3Chars[i] = src >> 8*(LRF_DEVICE_NAME_LEN-1-i);
+	}
 }
 
-void SPI_PackMagConfig(uint32_t *dst, bool autoSetReset, uint8_t cmFreq, uint8_t prdSet)
+void SPI_PackLrfConfig(uint32_t *dst, bool laserPointer, uint8_t cmFreq, uint8_t minRange, uint8_t maxRange)
 {
-	*dst = prdSet&7;
-	*dst |= (cmFreq&7) << 3;
-	*dst |= autoSetReset << 6;
+	*dst = maxRange;
+	*dst |= minRange << 8;
+	*dst |= (cmFreq&7) << 16;
+	*dst |= (laserPointer) << 19;
 }
 
-void SPI_UnpackMagConfig(bool *autoSetReset, uint8_t *cmFreq, uint8_t *prdSet, uint32_t src)
+void SPI_UnpackLrfConfig(bool *laserPointer, uint8_t *cmFreq, uint8_t *minRange, uint8_t *maxRange, uint32_t src)
 {
-	*prdSet = src&7;
-	*cmFreq = (src>>3)&7;
-	*autoSetReset = (src>>6) & 1;
+	*maxRange = src & 0xff;
+	*minRange = (src>>8) & 0xff;
+	*cmFreq = (src>>16) & 7;
+	*laserPointer = (src>>19) & 1;
 }
 
-void SPI_PackMagConfigStatus(uint32_t *dst, bool autoSetReset, bool cmFreq, bool prdSet)
+void SPI_PackLrfConfigStatus(uint32_t *dst, bool minRangeFlag, bool maxRangeFlag, bool cmFlag)
 {
-	*dst = prdSet&1;
-	*dst |= (cmFreq&1) << 1;
-	*dst |= (autoSetReset&1) << 2;
+	*dst = cmFlag&1;
+	*dst |= (maxRangeFlag&1) << 1;
+	*dst |= (minRangeFlag&1) << 2;
 }
 
-void SPI_UnpackMagConfigStatus(bool *autoSetReset, bool *cmFreq, bool *prdSet, uint32_t src)
+void SPI_UnpackLrfConfigStatus(bool *minRangeFlag, bool *maxRangeFlag, bool *cmFlag, uint32_t src)
 {
-	*prdSet = src&1;
-	*cmFreq = (src>>1)&1;
-	*autoSetReset = (src>>2) & 1;
+	*cmFlag = src&1;
+	*maxRangeFlag = (src>>1)&1;
+	*minRangeFlag = (src>>2)&1;
 }
