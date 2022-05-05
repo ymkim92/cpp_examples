@@ -48,17 +48,21 @@
 #define LRF_SIZE_CMD_CMM_DATA						9
 #define LRF_SIZE_QRY_STATUS							2
 #define LRF_SIZE_REP_QRY_STATUS						6
+
+#define printfLog           printf
 // *************************************
 #define PrintLogLrfStateMachine(a, b)               printfLog("%s (%u, %u)\r\n", __func__, a, b)
 
 #define LRF_CHECKSUM_XOR_BYTE						0x50
-
-#define printfLog           printf
-
 #define LRF_MSG_HEADER_SIZE         2
 #define LRF_MSG_CHECKSUM_SIZE       1
 
+#define LRF_MSG_GREETING_END_CHAR   '\n'
+
 /*
+LRF (1): 00 
+LRF (28): 0A 0D 4C 52 46 31 32 37 2D 4D 34 20 20 20 20 20 20 20 32 2E 34 2E 32 35 2E 32 0D 0A
+
 LRF (73): 59 C0 4C 52 46 31 32 37 2D 4D 34 20 20 20 20 20 20 0D 0A 00 00 01 20 11 00 00 00 11 00 00 00 11 00 00 0D 0A 52 31 32 37 34 32 39 30 37 37 0D 0A 14 14 C1 B6 31 39 2D 31 32 2D 31 30 0D 0A 31 33 3A 30 30 3A 34 37 0D 0A EF 
 LRF (4): 59 C5 3C 0A // laser point
 LRF (4): 59 31 3C 96 // min range
@@ -66,8 +70,10 @@ LRF (4): 59 32 3C 97 // max range
 */
 
 
-uint8_t *message;
-uint16_t size;
+
+
+static uint8_t *lrfMessage;
+static uint16_t lrfMessageSize;
 
 uint8_t message0[] = { 0x59, 0xDA, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68};
 uint16_t size0 = sizeof(message0);
@@ -78,6 +84,9 @@ uint16_t size2 = sizeof(message2);
 
 uint8_t message3[] = { 0x59, 0xC5, 0x3C, 0x0A };
 uint16_t size3 = sizeof(message3);
+
+uint8_t message4[] = { 0x0a, 0x0d, 0x4c, 0x52, 0x46, 0x31, 0x32, 0x37, 0x2d, 0x4d, 0x34, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x32, 0x2e, 0x34, 0x2e, 0x32, 0x35, 0x2e, 0x32, 0x0d, 0x0a};
+uint16_t size4 = sizeof(message4);
 
 uint8_t ui8Checksum;
 
@@ -95,8 +104,8 @@ struct lrfMsgState
     uint16_t m_posFromSync; 
 };
 
-lrfMsgStateFn lrfMsgWait, lrfMsgStarted, lrfMsgData, lrfMsgStatus, 
-    lrfMsgConfigLaserPoint;
+lrfMsgStateFn lrfStateGreeting, lrfStateWait, lrfStateStarted, lrfStateData, lrfStateStatus, 
+    lrfStateConfigLaserPoint;
 
 bool CompareLrfMessageChecksum(uint8_t calChecksum, uint8_t msgChecksum);
 
@@ -123,44 +132,56 @@ static uint8_t GetLrfChecksum(uint8_t *buf, uint16_t size)
 	return sum ^ LRF_CHECKSUM_XOR_BYTE;
 }
 
-void lrfMsgWait(struct lrfMsgState * state)
+void lrfStateGreeting(struct lrfMsgState * state)
 {
     state->m_pos = 0;
     state->m_posFromSync = 0;
     PrintLogLrfStateMachine(state->m_pos, state->m_posFromSync);
 
-    ui8Checksum = message[state->m_pos];
-    if (LRF_BYTE_SYNC == message[state->m_pos])
+    if ((lrfMessageSize > 2) && (LRF_MSG_GREETING_END_CHAR == lrfMessage[lrfMessageSize-1]))
     {
-        state->m_next = lrfMsgStarted;
+        printfLog("%s", lrfMessage);
+        state->m_next = lrfStateWait;
+    }
+}
+
+void lrfStateWait(struct lrfMsgState * state)
+{
+    state->m_posFromSync = 0;
+    PrintLogLrfStateMachine(state->m_pos, state->m_posFromSync);
+
+    ui8Checksum = lrfMessage[state->m_pos];
+    if (LRF_BYTE_SYNC == lrfMessage[state->m_pos])
+    {
+        state->m_next = lrfStateStarted;
         state->m_pos += 1;
         state->m_posFromSync += 1;
     }
     else
     {
         printfLog("Wrong SYNC received at first index\r\n");
-        state->m_next = lrfMsgWait;
-        state->m_pos = size;
+        state->m_next = lrfStateWait;
+        state->m_pos = lrfMessageSize;
     }
 }
 
-void lrfMsgStarted(struct lrfMsgState * state)
+void lrfStateStarted(struct lrfMsgState * state)
 {
     bool bUnknowMsgType = false;
     PrintLogLrfStateMachine(state->m_pos, state->m_posFromSync);
-    ui8Checksum += message[state->m_pos];
+    ui8Checksum += lrfMessage[state->m_pos];
 
-    if (LRF_BYTE_CMD_CMM == message[state->m_pos])
+    if (LRF_BYTE_CMD_CMM == lrfMessage[state->m_pos])
     {
-        state->m_next = lrfMsgData;
+        state->m_next = lrfStateData;
     }
-    else if (LRF_BYTE_CMD_READ_STATUS == message[state->m_pos])
+    else if (LRF_BYTE_CMD_READ_STATUS == lrfMessage[state->m_pos])
     {
-        state->m_next = lrfMsgStatus;
+        state->m_next = lrfStateStatus;
     }
-    else if (LRF_BYTE_CFG_POINTER == message[state->m_pos])
+    else if (LRF_BYTE_CFG_POINTER == lrfMessage[state->m_pos])
     {
-        state->m_next = lrfMsgConfigLaserPoint;
+        state->m_next = lrfStateConfigLaserPoint;
     }
     else
     {
@@ -169,8 +190,8 @@ void lrfMsgStarted(struct lrfMsgState * state)
 
     if (bUnknowMsgType)
     {
-        state->m_next = lrfMsgWait;
-        state->m_pos = size;
+        state->m_next = lrfStateWait;
+        state->m_pos = lrfMessageSize;
     }
     else
     {
@@ -179,48 +200,48 @@ void lrfMsgStarted(struct lrfMsgState * state)
     }
 }
 
-void lrfMsgData(struct lrfMsgState * state)
+void lrfStateData(struct lrfMsgState * state)
 {
     PrintLogLrfStateMachine(state->m_pos, state->m_posFromSync);
     if ((LRF_SIZE_CMD_CMM_DATA - LRF_MSG_CHECKSUM_SIZE) > state->m_posFromSync)
     {
-        ui8Checksum += message[state->m_pos];
-        ui8LrfData[state->m_posFromSync - LRF_MSG_HEADER_SIZE] = message[state->m_pos];
+        ui8Checksum += lrfMessage[state->m_pos];
+        ui8LrfData[state->m_posFromSync - LRF_MSG_HEADER_SIZE] = lrfMessage[state->m_pos];
     }
     else
     {
-        bLrfDataReady = CompareLrfMessageChecksum(ui8Checksum, message[state->m_pos]);
-        state->m_next = lrfMsgWait;
+        bLrfDataReady = CompareLrfMessageChecksum(ui8Checksum, lrfMessage[state->m_pos]);
+        state->m_next = lrfStateWait;
     }
     state->m_pos += 1;
     state->m_posFromSync += 1;
 }
 
-void lrfMsgConfigLaserPoint(struct lrfMsgState * state)
+void lrfStateConfigLaserPoint(struct lrfMsgState * state)
 {
     PrintLogLrfStateMachine(state->m_pos, state->m_posFromSync);
     if ((LRF_SIZE_ACK - LRF_MSG_CHECKSUM_SIZE) > state->m_posFromSync)
     {
-        ui8Checksum += message[state->m_pos];
-        if (LRF_BYTE_ACK != message[state->m_pos])
+        ui8Checksum += lrfMessage[state->m_pos];
+        if (LRF_BYTE_ACK != lrfMessage[state->m_pos])
         {
-            printfLog("ACK Error: ACK(0x%x) != 0x%x\r\n", LRF_BYTE_ACK, message[state->m_pos]);
+            printfLog("ACK Error: ACK(0x%x) != 0x%x\r\n", LRF_BYTE_ACK, lrfMessage[state->m_pos]);
             // lrfStats.m_parserErrorAckType += 1
-            state->m_next = lrfMsgWait;
-            state->m_pos += size;
+            state->m_next = lrfStateWait;
+            state->m_pos += lrfMessageSize;
             return;
         }
     }
     else
     {
-        bLrfConfigOk = CompareLrfMessageChecksum(ui8Checksum, message[state->m_pos]);
-        state->m_next = lrfMsgWait;
+        bLrfConfigOk = CompareLrfMessageChecksum(ui8Checksum, lrfMessage[state->m_pos]);
+        state->m_next = lrfStateWait;
     }
     state->m_pos += 1;
     state->m_posFromSync += 1;
 }
 
-void lrfMsgStatus(struct lrfMsgState * state)
+void lrfStateStatus(struct lrfMsgState * state)
 {
     PrintLogLrfStateMachine(state->m_pos, state->m_posFromSync);
 }
@@ -228,7 +249,7 @@ void lrfMsgStatus(struct lrfMsgState * state)
 int main(void)
 {
     int i=0;
-    struct lrfMsgState state = { lrfMsgWait, 0, 0 };
+    struct lrfMsgState state = { lrfStateGreeting, 0, 0 };
     printf("bLrfDataReady: %d\n", bLrfDataReady);
     printf("bLrfConfigOk: %d\n", bLrfConfigOk);
 
@@ -236,19 +257,19 @@ int main(void)
     {
         if (i==0)
         {
-            message = message3;
-            size = size3;
+            lrfMessage = message4;
+            lrfMessageSize = size4;
         }
         else
         {
-            message = message0;
-            size = size0;
+            lrfMessage = message0;
+            lrfMessageSize = size0;
         }
         state.m_pos = 0;
         while(state.m_next) 
         {
             state.m_next(&state);
-            if (size <= state.m_pos)
+            if (lrfMessageSize <= state.m_pos)
                 break;
         }
     }
