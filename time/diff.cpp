@@ -9,6 +9,9 @@ void f()
 
     auto diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now-prev);
     std::cout << "diff(ms):" << diff_ms.count() << "\n";
+    
+    auto diff_sec = std::chrono::duration_cast<std::chrono::seconds>(now-prev);
+    std::cout << "diff(sec):" << diff_sec.count() << "\n";
     prev = now;
 }
 
