@@ -3,7 +3,7 @@
 
 struct Player
 {
-    std::shared_ptr<Player> companion;
+    std::weak_ptr<Player> companion;
     ~Player() { std::cout << "~Player\n"; }
 };
 
