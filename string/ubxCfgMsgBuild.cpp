@@ -27,7 +27,7 @@ void PrintHex(uint8_t *data, uint16_t size)
 
 // B5 62 06 08 06 00 64 00 01 00 01 00 7A 12
 // bool SetUbxCfg(uint8_t ubxClass, uint8_t ubxId, std::string &data)
-void BuildUbxMessage(uint8_t* ret, const uint8_t& ubx_class, const uint8_t& ubx_id, const uint8_t* data, const uint16_t size)
+void BuildUbxMessage(std::array<uint8_t, 256>& ret, const uint8_t& ubx_class, const uint8_t& ubx_id, const uint8_t* data, const uint16_t size)
 {
     ret[0] = 0xb5;
     ret[1] = 0x62;
@@ -38,7 +38,7 @@ void BuildUbxMessage(uint8_t* ret, const uint8_t& ubx_class, const uint8_t& ubx_
     for (uint16_t i=0; i<size; i++) {
         ret[6+i] = data[i];
     }
-    uint16_t crc = GetCheckSumRfc1145(&ret[2], size+2);
+    uint16_t crc = GetCheckSumRfc1145(&ret[2], size+4);
     
     ret[size+6] = crc & 0xff;
     ret[size+7] = (crc >> 8) & 0xff;
@@ -47,11 +47,11 @@ void BuildUbxMessage(uint8_t* ret, const uint8_t& ubx_class, const uint8_t& ubx_
 
 int main()
 {
-    uint8_t message[256];
+    std::array<uint8_t, 256> message;
     uint8_t data[] = {0x64, 0, 1, 0, 1, 0};
     BuildUbxMessage(message, 6, 8, data, sizeof(data));
     std::cout << ".";
-    PrintHex(message, sizeof(data)+8);
+    PrintHex(message.data(), sizeof(data)+8);
     std::cout << "." << std::endl;
     return 0;
 }
