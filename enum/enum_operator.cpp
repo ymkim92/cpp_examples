@@ -30,12 +30,12 @@ DayScoped& operator++(DayScoped& d)
 //     return d2;
 // }
 
-// DayScoped& operator=(DayScoped& d)
-// {
-//     m_status = 0;
-//     m_status |= 1 << static_cast<uint32_t>(d);
-//     return status;
-// }
+DayScoped& operator=(DayScoped& d1, DayScoped d2)
+{
+    // m_status = 0;
+    // m_status |= 1 << static_cast<uint32_t>(d);
+    d1 = d2;
+}
 
 int main()
 {
