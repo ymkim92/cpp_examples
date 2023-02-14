@@ -14,6 +14,6 @@ int main()
         std::cout << num_pair.at(4) << std::endl;
     }
     catch (const std::out_of_range& e) {
-        std::cout << "OUt of Range error" << std::endl;
+        std::cout << "Out of Range error" << e.what() << std::endl;
     }
 }
