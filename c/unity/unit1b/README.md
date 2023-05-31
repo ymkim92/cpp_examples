@@ -1,0 +1,1 @@
+gcc TestDumbExample.c DumbExample.c unity.c -o TestDumbExample
