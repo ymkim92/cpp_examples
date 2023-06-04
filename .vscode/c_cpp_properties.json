@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "c/unity/unit1b/src/"
+                "c/unity/unit1b_cmake/src",
+                "c/unity/unit2/inc"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

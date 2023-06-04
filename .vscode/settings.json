@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.bb": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -70,7 +71,8 @@
         "memory_resource": "cpp",
         "random": "cpp",
         "set": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "mk20dx256.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
