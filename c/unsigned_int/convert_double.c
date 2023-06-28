@@ -4,7 +4,7 @@
 
 void working()
 {
-    double dData = -4.1f;
+    double dData = -2.1;
     printf("size of double = %ld\n", sizeof(double));
 
     printf("double = %lf\n", dData);

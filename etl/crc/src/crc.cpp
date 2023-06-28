@@ -1,7 +1,13 @@
 #include <etl/crc16_modbus.h>
 #include <iostream>
 
-int main()
+uint16_t GetCrcModbus(uint8_t* buf, size_t bufLen)
+{
+    uint16_t crc = etl::crc16_modbus(buf, buf+bufLen);
+    return crc;
+}
+
+uint16_t TestCrcModbus()
 {
     std::string data("123456789");
 

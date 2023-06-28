@@ -13,12 +13,12 @@ set(ETL_GIT_TAG 20.35.14)
 find_package(PkgConfig REQUIRED)
 
 # Build src only instead of full super build
-# if (DEFINED SRC_BUILD_ONLY)
-#     add_subdirectory(src)
-#     return()
-# endif()
+if (DEFINED SRC_BUILD_ONLY)
+    add_subdirectory(src)
+    return()
+endif()
 
-# set_property(DIRECTORY PROPERTY EP_BASE ${CMAKE_BINARY_DIR}/subprojects)
+set_property(DIRECTORY PROPERTY EP_BASE ${CMAKE_BINARY_DIR}/subprojects)
 
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/staged)
 message(STATUS "${PROJECT_NAME} staged install: ${STAGED_INSTALL_PREFIX}")
@@ -63,13 +63,13 @@ ExternalProject_Add(crc_etl_test
         1
 )
 
-# install(
-#     DIRECTORY
-#         ${STAGED_INSTALL_PREFIX}/bin
-#         ${STAGED_INSTALL_PREFIX}/include
-#         ${STAGED_INSTALL_PREFIX}/lib
-#         ${STAGED_INSTALL_PREFIX}/share
-#     DESTINATION
-#         ${CMAKE_INSTALL_PREFIX}
-#     USE_SOURCE_PERMISSIONS
-# )
+install(
+    DIRECTORY
+        ${STAGED_INSTALL_PREFIX}/bin
+        ${STAGED_INSTALL_PREFIX}/include
+        ${STAGED_INSTALL_PREFIX}/lib
+        ${STAGED_INSTALL_PREFIX}/share
+    DESTINATION
+        ${CMAKE_INSTALL_PREFIX}
+    USE_SOURCE_PERMISSIONS
+)
