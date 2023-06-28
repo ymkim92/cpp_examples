@@ -1,8 +1,7 @@
-#include <etl/crc16_modbus.h>
-#include <stdio.h>
+#include "crc.h"
+#include "etl_wrapper.h"
 
 uint16_t GetCrcModbus(uint8_t* buf, size_t bufLen)
 {
-    uint16_t crc = etl::crc16_modbus(buf, buf+bufLen);
-    return crc;
+    return ETL_GetCrc16Modbus(buf, bufLen);
 }

@@ -1,3 +1,5 @@
+// not used
+
 #include <etl/crc16_modbus.h>
 #include <iostream>
 

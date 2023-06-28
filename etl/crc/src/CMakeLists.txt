@@ -16,7 +16,8 @@ set(DEF_INSTALL_CMAKEDIR share/cmake/${PROJECT_NAME})
 set(INSTALL_CMAKEDIR ${DEF_INSTALL_CMAKEDIR} CACHE PATH "Installation directory for CMake files")
 
 set(SOURCE_FILES
-    ${PROJECT_SOURCE_DIR}/crc.cpp
+    ${PROJECT_SOURCE_DIR}/crc.c
+    ${PROJECT_SOURCE_DIR}/etl_wrapper.cpp
 )
 
 set(INCLUDE_PUBLIC_HEADERS
