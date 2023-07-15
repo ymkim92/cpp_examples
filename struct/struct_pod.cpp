@@ -1,4 +1,5 @@
 // Listing 4-22: A code segment illustrating structured binding declaration
+// POD: plain old data
 struct Result
 {
     HumptyDumpty hd;
