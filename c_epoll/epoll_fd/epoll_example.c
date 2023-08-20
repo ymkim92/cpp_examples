@@ -40,15 +40,15 @@ int main()
     struct epoll_event event, events[MAX_EVENTS];
     int epoll_fd = epoll_create1(0);
 
-    SetNonBlocking(0);
-    printf("Blocking..\n");
-    sleep(3);
-    printf(" Done\n");
+    // SetNonBlocking(0);
+    // printf("Blocking..\n");
+    // sleep(3);
+    // printf(" Done\n");
 
-    SetNonBlocking(1);
-    printf("NonBlocking..\n");
-    sleep(3);
-    printf(" Done\n");
+    // SetNonBlocking(1);
+    // printf("NonBlocking..\n");
+    // sleep(3);
+    // printf(" Done\n");
 
     if(epoll_fd == -1)
     {
