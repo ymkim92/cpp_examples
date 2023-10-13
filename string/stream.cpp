@@ -46,8 +46,9 @@ static void TestSs()
     uint32_t m_s1_2 = 0x34;
     std::stringstream ss;
     ss
-            << std::dec << m_s1_2
-            << std::uppercase << std::setfill('0') << std::setw(1) << std::hex << (((uint32_t)m_s1_1 >> 16) & 0xf)
+            << "dec " << std::dec << m_s1_1
+            << "hex " << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << m_s1_2
             // << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << (uint32_t)m_s1_1 & 0xffff
             ;
+    std::cout << ss.str() << std::endl;
 }
