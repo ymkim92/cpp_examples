@@ -1,14 +1,16 @@
 #include "fsm.h"
-#include <stdio.h>
 #include <iostream>
 #include <memory>
+#include <stdio.h>
 #include <string>
 using namespace Patterns;
 bool KeyPresses[255];
+
 enum class TurnstileStateType {
   LOCKED,
   UNLOCKED,
 };
+
 class TurnstileLockedState : public State<TurnstileStateType> {
 public:
   TurnstileLockedState(FiniteStateMachine<TurnstileStateType> &fsm)
@@ -27,6 +29,7 @@ public:
     }
   }
 };
+
 class TurnstileUnLockedState : public State<TurnstileStateType> {
 public:
   TurnstileUnLockedState(FiniteStateMachine<TurnstileStateType> &fsm)
@@ -44,6 +47,7 @@ public:
     }
   }
 };
+
 int main(int argc, char *argv) {
   printf("--------------------------------------------\n");
   printf("An example demo for the Finite State Machine\n");
