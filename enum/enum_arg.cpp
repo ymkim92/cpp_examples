@@ -18,4 +18,6 @@ void Test::foo(const Arg& a)
 int main()
 {
     Test::foo(Test::ARG2);
+    Test::foo(static_cast<Test::Arg>(0));
+    Test::foo(static_cast<Test::Arg>(3));
 }
